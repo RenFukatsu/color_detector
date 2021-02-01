@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     sensor_msgs
     pcl_ros
+    color_detector_msgs
 )
 
 catkin_package(
