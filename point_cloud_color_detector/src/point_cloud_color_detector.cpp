@@ -1,6 +1,7 @@
 #include "point_cloud_color_detector/point_cloud_color_detector.h"
 
 PointCloudColorDetector::PointCloudColorDetector() : private_nh("~"),
+                                                     use_colors(colors.size(), false),
                                                      config_hsvs(colors.size()),
                                                      masked_pc_pubs(colors.size()),
                                                      target_pc_pubs(colors.size()) {
@@ -10,15 +11,19 @@ PointCloudColorDetector::PointCloudColorDetector() : private_nh("~"),
         masked_pc_pubs[i] = private_nh.advertise<sensor_msgs::PointCloud2>("/cloud/masked/" + colors[i] + "/raw", 1);
         target_pc_pubs[i] = private_nh.advertise<sensor_msgs::PointCloud2>("/cloud/target/" + colors[i] + "/raw", 1);
     }
+    color_enable_srv = nh.advertiseService("color_enable", &PointCloudColorDetector::enable_color, this);
 
     private_nh.param("TOLERANCE", TOLERANCE, 0.20);
     private_nh.param("MIN_CLUSTER_SIZE", MIN_CLUSTER_SIZE, 20);
     private_nh.param("MAX_CLUSTER_SIZE", MAX_CLUSTER_SIZE, 10000);
+    update_hsv_params();
+}
+
+void PointCloudColorDetector::update_hsv_params() {
     for (size_t i = 0; i < colors.size(); i++) {
         std::string uppercase_latter;
         uppercase_latter.resize(colors[i].size());
         std::transform(colors[i].begin(), colors[i].end(), uppercase_latter.begin(), toupper);
-        ROS_INFO_STREAM_ONCE(uppercase_latter);
         private_nh.param("LOWER_" + uppercase_latter + "_H", config_hsvs[i].lower.h, 0);
         private_nh.param("LOWER_" + uppercase_latter + "_S", config_hsvs[i].lower.s, 0);
         private_nh.param("LOWER_" + uppercase_latter + "_V", config_hsvs[i].lower.v, 0);
@@ -26,6 +31,15 @@ PointCloudColorDetector::PointCloudColorDetector() : private_nh("~"),
         private_nh.param("UPPER_" + uppercase_latter + "_S", config_hsvs[i].upper.s, 0);
         private_nh.param("UPPER_" + uppercase_latter + "_V", config_hsvs[i].upper.v, 0);
     }
+}
+
+bool PointCloudColorDetector::enable_color(color_detector_srvs::ColorEnable::Request &req, color_detector_srvs::ColorEnable::Response &res) {
+    for (size_t i = 0; i < colors.size(); i++) {
+        if (colors[i] == req.color) {
+            use_colors[i] = req.enable;
+        }
+    }
+    return true;
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> PointCloudColorDetector::limit_point_cloud(const ThresholdHSV &thres_hsv, const pcl::PointCloud<pcl::PointXYZRGB> &pc) {
@@ -102,17 +116,16 @@ color_detector_msgs::TargetPosition PointCloudColorDetector::calc_target_positio
     return target_position;
 }
 
-void PointCloudColorDetector::detect_target_position(const ThresholdHSV &thres_hsv,
-                                                     const std_msgs::Header &header,
-                                                     const ros::Publisher &masked_pc_pub,
-                                                     const ros::Publisher &target_pc_pub,
-                                                     const pcl::PointCloud<pcl::PointXYZRGB> &pc) {
+pcl::PointCloud<pcl::PointXYZRGB> PointCloudColorDetector::detect_target_cluster(const ThresholdHSV &thres_hsv,
+                                                                                  const std_msgs::Header &header,
+                                                                                  const ros::Publisher &masked_pc_pub,
+                                                                                  const pcl::PointCloud<pcl::PointXYZRGB> &pc) {
     pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> masked_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
     *masked_pc = limit_point_cloud(thres_hsv, pc);
 
     if (masked_pc->size() < MIN_CLUSTER_SIZE) {
         ROS_WARN_STREAM("The number of points limited by HSV is too small.");
-        return;
+        return pcl::PointCloud<pcl::PointXYZRGB>();
     }
 
     ROS_INFO_STREAM("masked cluster size : " << masked_pc->size());
@@ -124,26 +137,28 @@ void PointCloudColorDetector::detect_target_position(const ThresholdHSV &thres_h
     std::vector<pcl::PointIndices> pc_indices = euclidean_clustering(masked_pc);
     pcl::PointCloud<pcl::PointXYZRGB> target_pc = get_lagest_cluster(*masked_pc, pc_indices);
 
-    ROS_INFO_STREAM("target cluster size : " << target_pc.size());
-    sensor_msgs::PointCloud2 ros_target_pc;
-    pcl::toROSMsg(target_pc, ros_target_pc);
-    ros_target_pc.header = header;
-    target_pc_pub.publish(ros_target_pc);
-
-    color_detector_msgs::TargetPosition target_position = calc_target_position(target_pc);
-    target_position.header = header;
-    ROS_INFO_STREAM("finite cluster size : " << target_position.cluster_num);
-    target_position_pub.publish(target_position);
+    return target_pc;
 }
 
 void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc) {
     auto start_time = ros::Time::now();
+    update_hsv_params();
     pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> rgb_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromROSMsg(*received_pc, *rgb_pc);
 
     for (size_t i = 0; i < colors.size(); i++) {
-        detect_target_position(config_hsvs[i], received_pc->header, masked_pc_pubs[i], target_pc_pubs[i], *rgb_pc);
-        break;
+        if (!use_colors[i]) continue;
+        auto target_pc = detect_target_cluster(config_hsvs[i], received_pc->header, masked_pc_pubs[i], *rgb_pc);
+        ROS_INFO_STREAM("target cluster size : " << target_pc.size());
+        sensor_msgs::PointCloud2 ros_target_pc;
+        pcl::toROSMsg(target_pc, ros_target_pc);
+        ros_target_pc.header = received_pc->header;
+        target_pc_pubs[i].publish(ros_target_pc);
+
+        color_detector_msgs::TargetPosition target_position = calc_target_position(target_pc);
+        target_position.header = received_pc->header;
+        ROS_INFO_STREAM("finite cluster size : " << target_position.cluster_num);
+        target_position_pub.publish(target_position);
     }
 
     ROS_INFO_STREAM("[sensor_callback] elasped time : " << (ros::Time::now() - start_time).toSec() << "[sec]");

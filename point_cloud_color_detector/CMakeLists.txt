@@ -12,7 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
     sensor_msgs
     pcl_ros
     color_detector_msgs
+    color_detector_srvs
 )
+
+find_package(PCL 1.10 REQUIRED)
 
 catkin_package(
     INCLUDE_DIRS include
@@ -34,4 +37,16 @@ add_dependencies(
 target_link_libraries(point_cloud_color_detector
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
+)
+
+add_executable(
+    teleop_color_enable tools/teleop_color_enable.cpp
+)
+
+add_dependencies(
+    teleop_color_enable ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(teleop_color_enable
+    ${catkin_LIBRARIES}
 )

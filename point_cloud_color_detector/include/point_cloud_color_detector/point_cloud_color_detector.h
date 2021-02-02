@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "color_detector_msgs/TargetPosition.h"
+#include "color_detector_srvs/ColorEnable.h"
 
 class PointCloudColorDetector {
  public:
@@ -22,16 +23,19 @@ class PointCloudColorDetector {
         HSV lower, upper;
     };
     PointCloudColorDetector();
+    void update_hsv_params();
+    bool enable_color(color_detector_srvs::ColorEnable::Request &req, color_detector_srvs::ColorEnable::Response &res);
     void sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc);
     pcl::PointCloud<pcl::PointXYZRGB> limit_point_cloud(const ThresholdHSV &thres_hsv, const pcl::PointCloud<pcl::PointXYZRGB> &pc);
     std::vector<pcl::PointIndices> euclidean_clustering(const pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> &pc);
     pcl::PointCloud<pcl::PointXYZRGB> get_lagest_cluster(const pcl::PointCloud<pcl::PointXYZRGB> &pc, const std::vector<pcl::PointIndices> &pc_indices);
     color_detector_msgs::TargetPosition calc_target_position(const  pcl::PointCloud<pcl::PointXYZRGB> &pc);
-    void detect_target_position(const ThresholdHSV &thres_hsv, const std_msgs::Header &header, const ros::Publisher &masked_pc_pub, const ros::Publisher &target_pc_pub, const pcl::PointCloud<pcl::PointXYZRGB> &pc);
+    pcl::PointCloud<pcl::PointXYZRGB> detect_target_cluster(const ThresholdHSV &thres_hsv, const std_msgs::Header &header, const ros::Publisher &masked_pc_pub, const pcl::PointCloud<pcl::PointXYZRGB> &pc);
     void process();
 
  private:
     const std::vector<std::string> colors = {"green", "red", "blue", "yellow", "white"};
+    std::vector<bool> use_colors;
     std::vector<ThresholdHSV> config_hsvs;
     double TOLERANCE;
     int MIN_CLUSTER_SIZE;
@@ -44,6 +48,7 @@ class PointCloudColorDetector {
     ros::Publisher target_position_pub;
     std::vector<ros::Publisher> masked_pc_pubs;
     std::vector<ros::Publisher> target_pc_pubs;
+    ros::ServiceServer color_enable_srv;
 };
 
 #endif  // POINT_CLOUD_COLOR_DETECTOR_H_
