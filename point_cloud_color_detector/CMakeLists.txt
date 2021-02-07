@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
     pcl_ros
     color_detector_msgs
     color_detector_srvs
+    color_detector_params
+    dynamic_reconfigure
 )
 
 find_package(PCL 1.10 REQUIRED)

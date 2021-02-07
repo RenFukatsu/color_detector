@@ -5,6 +5,9 @@ PointCloudColorDetector::PointCloudColorDetector() : private_nh("~"),
                                                      config_hsvs(colors.size()),
                                                      masked_pc_pubs(colors.size()),
                                                      target_pc_pubs(colors.size()) {
+    dynamic_reconfigure::Server<color_detector_params::HsvConfig>::CallbackType hsv_param_callback_type;
+    hsv_param_callback_type = boost::bind(&PointCloudColorDetector::hsv_param_changed, this, _1, _2);
+    hsv_param_server.setCallback(hsv_param_callback_type);
     pc_sub = nh.subscribe("/camera/depth_registered/points", 1, &PointCloudColorDetector::sensor_callback, this);
     target_position_pub = nh.advertise<color_detector_msgs::TargetPosition>("/target/position", 1);
     for (size_t i = 0; i < colors.size(); i++) {
@@ -17,6 +20,48 @@ PointCloudColorDetector::PointCloudColorDetector() : private_nh("~"),
     private_nh.param("MIN_CLUSTER_SIZE", MIN_CLUSTER_SIZE, 20);
     private_nh.param("MAX_CLUSTER_SIZE", MAX_CLUSTER_SIZE, 10000);
     update_hsv_params();
+}
+
+void PointCloudColorDetector::hsv_param_changed(color_detector_params::HsvConfig &config, uint32_t level) {
+    only_show_mask_points = config.only_show_mask_points;
+    for (size_t i = 0; i < colors.size(); i++) {
+        if (colors[i] == "red") {
+            config_hsvs[i].lower.h = config.LOWER_RED_H;
+            config_hsvs[i].lower.s = config.LOWER_RED_S;
+            config_hsvs[i].lower.v = config.LOWER_RED_V;
+            config_hsvs[i].upper.h = config.UPPER_RED_H;
+            config_hsvs[i].upper.s = config.UPPER_RED_S;
+            config_hsvs[i].upper.v = config.UPPER_RED_V;
+        } else if (colors[i] == "green") {
+            config_hsvs[i].lower.h = config.LOWER_GREEN_H;
+            config_hsvs[i].lower.s = config.LOWER_GREEN_S;
+            config_hsvs[i].lower.v = config.LOWER_GREEN_V;
+            config_hsvs[i].upper.h = config.UPPER_GREEN_H;
+            config_hsvs[i].upper.s = config.UPPER_GREEN_S;
+            config_hsvs[i].upper.v = config.UPPER_GREEN_V;
+        } else if (colors[i] == "blue") {
+            config_hsvs[i].lower.h = config.LOWER_BLUE_H;
+            config_hsvs[i].lower.s = config.LOWER_BLUE_S;
+            config_hsvs[i].lower.v = config.LOWER_BLUE_V;
+            config_hsvs[i].upper.h = config.UPPER_BLUE_H;
+            config_hsvs[i].upper.s = config.UPPER_BLUE_S;
+            config_hsvs[i].upper.v = config.UPPER_BLUE_V;
+        } else if (colors[i] == "yellow") {
+            config_hsvs[i].lower.h = config.LOWER_YELLOW_H;
+            config_hsvs[i].lower.s = config.LOWER_YELLOW_S;
+            config_hsvs[i].lower.v = config.LOWER_YELLOW_V;
+            config_hsvs[i].upper.h = config.UPPER_YELLOW_H;
+            config_hsvs[i].upper.s = config.UPPER_YELLOW_S;
+            config_hsvs[i].upper.v = config.UPPER_YELLOW_V;
+        } else if (colors[i] == "white") {
+            config_hsvs[i].lower.h = config.LOWER_WHITE_H;
+            config_hsvs[i].lower.s = config.LOWER_WHITE_S;
+            config_hsvs[i].lower.v = config.LOWER_WHITE_V;
+            config_hsvs[i].upper.h = config.UPPER_WHITE_H;
+            config_hsvs[i].upper.s = config.UPPER_WHITE_S;
+            config_hsvs[i].upper.v = config.UPPER_WHITE_V;
+        }
+    }
 }
 
 void PointCloudColorDetector::update_hsv_params() {
@@ -57,6 +102,8 @@ pcl::PointCloud<pcl::PointXYZRGB> PointCloudColorDetector::limit_point_cloud(con
             masked_pc.push_back(rgb_point);
         }
     }
+    ROS_DEBUG_STREAM("lower hsv param : " << thres_hsv.lower.h << ' ' << thres_hsv.lower.s << ' ' << thres_hsv.lower.v);
+    ROS_DEBUG_STREAM("upper hsv param : " << thres_hsv.upper.h << ' ' << thres_hsv.upper.s << ' ' << thres_hsv.upper.v);
     return masked_pc;
 }
 
@@ -117,9 +164,9 @@ color_detector_msgs::TargetPosition PointCloudColorDetector::calc_target_positio
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> PointCloudColorDetector::detect_target_cluster(const ThresholdHSV &thres_hsv,
-                                                                                  const std_msgs::Header &header,
-                                                                                  const ros::Publisher &masked_pc_pub,
-                                                                                  const pcl::PointCloud<pcl::PointXYZRGB> &pc) {
+                                                                                 const std_msgs::Header &header,
+                                                                                 const ros::Publisher &masked_pc_pub,
+                                                                                 const pcl::PointCloud<pcl::PointXYZRGB> &pc) {
     pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> masked_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
     *masked_pc = limit_point_cloud(thres_hsv, pc);
 
@@ -134,6 +181,8 @@ pcl::PointCloud<pcl::PointXYZRGB> PointCloudColorDetector::detect_target_cluster
     ros_masked_pc.header = header;
     masked_pc_pub.publish(ros_masked_pc);
 
+    if (only_show_mask_points) return pcl::PointCloud<pcl::PointXYZRGB>();
+
     std::vector<pcl::PointIndices> pc_indices = euclidean_clustering(masked_pc);
     pcl::PointCloud<pcl::PointXYZRGB> target_pc = get_lagest_cluster(*masked_pc, pc_indices);
 
@@ -142,7 +191,6 @@ pcl::PointCloud<pcl::PointXYZRGB> PointCloudColorDetector::detect_target_cluster
 
 void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc) {
     auto start_time = ros::Time::now();
-    update_hsv_params();
     pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> rgb_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromROSMsg(*received_pc, *rgb_pc);
 

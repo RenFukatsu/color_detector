@@ -8,11 +8,13 @@
 #include <pcl/point_types_conversion.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <dynamic_reconfigure/server.h>
 #include <string>
 #include <vector>
 
 #include "color_detector_msgs/TargetPosition.h"
 #include "color_detector_srvs/ColorEnable.h"
+#include "color_detector_params/HsvConfig.h"
 
 class PointCloudColorDetector {
  public:
@@ -23,6 +25,7 @@ class PointCloudColorDetector {
         HSV lower, upper;
     };
     PointCloudColorDetector();
+    void hsv_param_changed(color_detector_params::HsvConfig &config, uint32_t level);
     void update_hsv_params();
     bool enable_color(color_detector_srvs::ColorEnable::Request &req, color_detector_srvs::ColorEnable::Response &res);
     void sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc);
@@ -40,9 +43,11 @@ class PointCloudColorDetector {
     double TOLERANCE;
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
+    bool only_show_mask_points = false;
 
     ros::NodeHandle nh;
     ros::NodeHandle private_nh;
+    dynamic_reconfigure::Server<color_detector_params::HsvConfig> hsv_param_server;
 
     ros::Subscriber pc_sub;
     ros::Publisher target_position_pub;
