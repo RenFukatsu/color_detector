@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(color_detector)
+
+find_package(catkin REQUIRED COMPONENTS
+    roscpp
+    sensor_msgs
+    std_msgs
+    dynamic_reconfigure
+    point_cloud_color_detector
+    image_color_detector
+    color_detector_params
+    color_detector_msgs
+    color_detector_srvs
+)
+
+find_package(OpenCV 4 REQUIRED)
+find_package(PCL 1.10 REQUIRED)
+
+catkin_package(
+    INCLUDE_DIRS include
+)
+
+include_directories(
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+
+add_executable(
+    color_detector_node src/color_detector_node.cpp 
+)
+
+add_dependencies(
+    color_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(color_detector_node
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${PCL_LIBRARIES}
+)

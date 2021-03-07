@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
     FILES
     TargetPosition.msg
+    TargetAngle.msg
+    TargetAngleList.msg
 )
 
 generate_messages(

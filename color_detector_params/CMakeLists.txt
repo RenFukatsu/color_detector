@@ -13,13 +13,12 @@ generate_dynamic_reconfigure_options(
 )
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES color_detector_params
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+    INCLUDE_DIRS include
+    # LIBRARIES ${PROJECT_NAME}
+    # CATKIN_DEPENDS roscpp
 )
 
 include_directories(
-# include
-# ${catkin_INCLUDE_DIRS}
+    include
+    ${catkin_INCLUDE_DIRS}
 )

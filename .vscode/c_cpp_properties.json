@@ -7,7 +7,9 @@
       },
       "includePath": [
         "/home/amsl/catkin_ws/devel/include/**",
+        "/home/amsl/catkin_ws/src/color_detector/color_detector_params/include/**",
         "/home/amsl/catkin_ws/src/color_detector/point_cloud_color_detector/include/**",
+        "/home/amsl/catkin_ws/src/color_detector/image_color_detector/include/**",
         "/opt/ros/noetic/include/**",
         "/usr/include/**"
       ],

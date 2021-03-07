@@ -14,13 +14,13 @@ find_package(catkin REQUIRED COMPONENTS
     color_detector_msgs
     color_detector_srvs
     color_detector_params
-    dynamic_reconfigure
 )
 
 find_package(PCL 1.10 REQUIRED)
 
 catkin_package(
     INCLUDE_DIRS include
+    LIBRARIES ${PROJECT_NAME}
 )
 
 include_directories(
@@ -28,15 +28,20 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
+add_library(${PROJECT_NAME}
+    src/point_cloud_color_detector.cpp
+)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+
 add_executable(
-    point_cloud_color_detector src/point_cloud_color_detector.cpp
+    point_cloud_color_detector_node src/point_cloud_color_detector_node.cpp src/point_cloud_color_detector.cpp
 )
 
 add_dependencies(
-    point_cloud_color_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+    point_cloud_color_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
 )
 
-target_link_libraries(point_cloud_color_detector
+target_link_libraries(point_cloud_color_detector_node
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
 )

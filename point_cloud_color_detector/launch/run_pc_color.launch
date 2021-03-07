@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="point_cloud_color_detector" type="point_cloud_color_detector" name="point_cloud_color_detector" output="screen">
-        <rosparam command="load" file="$(find point_cloud_color_detector)/config/config.yaml"/>
-    </node>
+    <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" ns="color_detector_params" />
+    <node pkg="point_cloud_color_detector" type="point_cloud_color_detector" name="point_cloud_color_detector" output="screen" />
 </launch>
