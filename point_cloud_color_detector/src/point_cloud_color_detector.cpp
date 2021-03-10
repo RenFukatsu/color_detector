@@ -168,26 +168,39 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
     pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> rgb_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromROSMsg(*received_pc, *rgb_pc);
 
-    static auto st = ros::Time::now();
     for (size_t i = 0; i < colors.size(); i++) {
         if (!use_colors[i]) continue;
         auto target_pc = detect_target_cluster(param_hsvs[i], received_pc->header, masked_pc_pubs[i], *rgb_pc);
         ROS_DEBUG_STREAM("target cluster size : " << target_pc.size());
+
         if (target_pc.empty()) continue;
-        if (publish_target_points) {
-            sensor_msgs::PointCloud2 ros_target_pc;
-            pcl::toROSMsg(target_pc, ros_target_pc);
-            ros_target_pc.header = received_pc->header;
-            target_pc_pubs[i].publish(ros_target_pc);
-        }
 
         color_detector_msgs::TargetPosition target_position = calc_target_position(target_pc);
         target_position.header = received_pc->header;
         ROS_DEBUG_STREAM("finite cluster size : " << target_position.cluster_num);
         target_position_pub.publish(target_position);
+
+        if (publish_target_points) {
+            sensor_msgs::PointCloud2 ros_target_pc;
+            pcl::toROSMsg(target_pc, ros_target_pc);
+            ros_target_pc.header = received_pc->header;
+            target_pc_pubs[i].publish(ros_target_pc);
+            save_csv(target_position);
+        }
     }
 
     ROS_INFO_STREAM("[point_cloud_color_detector:sensor_callback] elasped time : " << (ros::Time::now() - start_time).toSec() << "[sec]");
+}
+
+void PointCloudColorDetector::save_csv(const color_detector_msgs::TargetPosition &target_position) {
+    static auto start_time = ros::Time::now();
+    static std::ofstream ofs("/home/amsl/dist.csv");
+    double x = target_position.x;
+    double y = target_position.y;
+    double z = target_position.z;
+    if (!only_publish_mask_points)
+        ofs << (ros::Time::now() - start_time).toSec() << ',' << sqrt(x * x + z * z) << ',' << target_position.cluster_num << ',' << x << ',' << y << ',' << z << std::endl;
+    return;
 }
 
 void PointCloudColorDetector::process() { ros::spin(); }
