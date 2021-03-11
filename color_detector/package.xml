@@ -10,9 +10,12 @@
   <depend>roscpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>nodelet</depend>
   <depend>image_color_detector</depend>
   <depend>point_cloud_color_detector</depend>
 
   <export>
+    <nodelet plugin="${prefix}/nodelet_description.xml" />
   </export>
 </package>

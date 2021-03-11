@@ -5,6 +5,8 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     sensor_msgs
     std_msgs
+    pluginlib
+    nodelet
     dynamic_reconfigure
     point_cloud_color_detector
     image_color_detector
@@ -25,15 +27,11 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(
-    color_detector_node src/color_detector_node.cpp 
+add_library(${PROJECT_NAME}
+    src/color_detector_nodelet.cpp
 )
 
-add_dependencies(
-    color_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
-)
-
-target_link_libraries(color_detector_node
+target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
     ${PCL_LIBRARIES}

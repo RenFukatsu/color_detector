@@ -16,6 +16,7 @@ using color_detector_params_hsv::ThresholdHSV;
 class ImageColorDetector {
  public:
     ImageColorDetector();
+    explicit ImageColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh);
     void set_hsv_params();
     void set_image_pubs();
     void image_callback(const sensor_msgs::ImageConstPtr &received_image);
@@ -31,18 +32,18 @@ class ImageColorDetector {
                              const std::vector<std::pair<int, int>> &pixels, sensor_msgs::ImagePtr &output_msg);
     double calc_angle(int target_position, int width);
     void process();
-    std::vector<std::string> colors;
-    std::vector<ThresholdHSV> param_hsvs;
-    bool only_publish_mask_image;
-    bool publish_target_image;
+    std::vector<std::string> colors_;
+    std::vector<ThresholdHSV> param_hsvs_;
+    bool only_publish_mask_image_;
+    bool publish_target_image_;
 
  private:
-    ros::NodeHandle nh;
-    ros::NodeHandle private_nh;
+    ros::NodeHandle nh_;
+    ros::NodeHandle private_nh_;
 
-    ros::Subscriber image_sub;
-    ros::Publisher target_angle_list_pub;
-    std::vector<ros::Publisher> target_image_pubs;
+    ros::Subscriber image_sub_;
+    ros::Publisher target_angle_list_pub_;
+    std::vector<ros::Publisher> target_image_pubs_;
 };
 
 #endif  // IMAGE_COLOR_DETECTOR_H_

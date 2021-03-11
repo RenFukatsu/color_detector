@@ -1,34 +1,36 @@
 #include "image_color_detector/image_color_detector.h"
 
-ImageColorDetector::ImageColorDetector() : private_nh("~") {
-    image_sub = nh.subscribe("/in", 1, &ImageColorDetector::image_callback, this);
-    target_angle_list_pub = nh.advertise<color_detector_msgs::TargetAngleList>("/target/angle", 1);
+ImageColorDetector::ImageColorDetector() : ImageColorDetector(ros::NodeHandle(), ros::NodeHandle("~")) {}
 
-    private_nh.param("ONLY_PUBLISH_MASK_IMAGE", only_publish_mask_image, false);
-    private_nh.param("PUBLISH_TARGET_IMAGE", publish_target_image, false);
-    color_detector_params_hsv::init(colors, param_hsvs);
+ImageColorDetector::ImageColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh) : nh_(nh), private_nh_(private_nh){
+    image_sub_ = nh_.subscribe("/in", 1, &ImageColorDetector::image_callback, this);
+    target_angle_list_pub_ = nh_.advertise<color_detector_msgs::TargetAngleList>("/target/angle", 1);
+
+    private_nh_.param("ONLY_PUBLISH_MASK_IMAGE", only_publish_mask_image_, false);
+    private_nh_.param("PUBLISH_TARGET_IMAGE", publish_target_image_, false);
+    color_detector_params_hsv::init(colors_, param_hsvs_);
     set_hsv_params();
     set_image_pubs();
 }
 
 void ImageColorDetector::set_hsv_params() {
-    for (size_t i = 0; i < colors.size(); i++) {
+    for (size_t i = 0; i < colors_.size(); i++) {
         std::string uppercase_latter;
-        uppercase_latter.resize(colors[i].size());
-        std::transform(colors[i].begin(), colors[i].end(), uppercase_latter.begin(), toupper);
-        private_nh.param("LOWER_" + uppercase_latter + "_H", param_hsvs[i].lower.h, 0);
-        private_nh.param("LOWER_" + uppercase_latter + "_S", param_hsvs[i].lower.s, 0);
-        private_nh.param("LOWER_" + uppercase_latter + "_V", param_hsvs[i].lower.v, 0);
-        private_nh.param("UPPER_" + uppercase_latter + "_H", param_hsvs[i].upper.h, 0);
-        private_nh.param("UPPER_" + uppercase_latter + "_S", param_hsvs[i].upper.s, 0);
-        private_nh.param("UPPER_" + uppercase_latter + "_V", param_hsvs[i].upper.v, 0);
+        uppercase_latter.resize(colors_[i].size());
+        std::transform(colors_[i].begin(), colors_[i].end(), uppercase_latter.begin(), toupper);
+        private_nh_.param("LOWER_" + uppercase_latter + "_H", param_hsvs_[i].lower.h, 0);
+        private_nh_.param("LOWER_" + uppercase_latter + "_S", param_hsvs_[i].lower.s, 0);
+        private_nh_.param("LOWER_" + uppercase_latter + "_V", param_hsvs_[i].lower.v, 0);
+        private_nh_.param("UPPER_" + uppercase_latter + "_H", param_hsvs_[i].upper.h, 0);
+        private_nh_.param("UPPER_" + uppercase_latter + "_S", param_hsvs_[i].upper.s, 0);
+        private_nh_.param("UPPER_" + uppercase_latter + "_V", param_hsvs_[i].upper.v, 0);
     }
 }
 
 void ImageColorDetector::set_image_pubs() {
-    target_image_pubs.resize(colors.size());
-    for (size_t i = 0; i < colors.size(); i++) {
-        target_image_pubs[i] = private_nh.advertise<sensor_msgs::Image>("target/" + colors[i] + "/image_raw", 1);
+    target_image_pubs_.resize(colors_.size());
+    for (size_t i = 0; i < colors_.size(); i++) {
+        target_image_pubs_[i] = private_nh_.advertise<sensor_msgs::Image>("target/" + colors_[i] + "/image_raw", 1);
     }
 }
 
@@ -41,30 +43,30 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
 
     color_detector_msgs::TargetAngleList targets;
     targets.header = received_image->header;
-    for (size_t i = 0; i < colors.size(); i++) {
+    for (size_t i = 0; i < colors_.size(); i++) {
         cv::Mat binarized_hsv_image;
-        filter_hsv(hsv_image, param_hsvs[i], binarized_hsv_image);
-        if (only_publish_mask_image) {
+        filter_hsv(hsv_image, param_hsvs_[i], binarized_hsv_image);
+        if (only_publish_mask_image_) {
             sensor_msgs::ImagePtr image_msg;
             cv::Mat masked_image;
             cv::bitwise_and(bgr_image, bgr_image, masked_image, binarized_hsv_image);
             image_msg = cv_bridge::CvImage(received_image->header, "bgr8", masked_image).toImageMsg();
-            target_image_pubs[i].publish(image_msg);
+            target_image_pubs_[i].publish(image_msg);
             continue;
         }
         cv::Mat target_image;
         std::vector<std::pair<int, int>> target_pixels;
         detect_target(binarized_hsv_image, target_image, target_pixels);
         color_detector_msgs::TargetAngle target_msg;
-        create_target_msg(colors[i], bgr_image.cols, target_pixels, target_msg);
+        create_target_msg(colors_[i], bgr_image.cols, target_pixels, target_msg);
         targets.data.push_back(target_msg);
-        if (publish_target_image) {
+        if (publish_target_image_) {
             sensor_msgs::ImagePtr image_msg;
             create_target_image(received_image->header, bgr_image, target_pixels, image_msg);
-            target_image_pubs[i].publish(image_msg);
+            target_image_pubs_[i].publish(image_msg);
         }
     }
-    target_angle_list_pub.publish(targets);
+    target_angle_list_pub_.publish(targets);
     ROS_INFO_STREAM("[image_color_detector:image_callback] elasped time : " << (ros::Time::now() - start_time).toSec()
                                                                             << "[sec]");
 }

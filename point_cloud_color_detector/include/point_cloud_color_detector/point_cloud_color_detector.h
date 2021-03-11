@@ -23,6 +23,7 @@ using color_detector_params_hsv::ThresholdHSV;
 class PointCloudColorDetector {
  public:
     PointCloudColorDetector();
+    explicit PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh);
     void set_hsv_params();
     bool enable_color(color_detector_srvs::ColorEnable::Request &req, color_detector_srvs::ColorEnable::Response &res);
     void sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc);
@@ -38,11 +39,11 @@ class PointCloudColorDetector {
                                                             const pcl::PointCloud<pcl::PointXYZRGB> &pc);
     void save_csv(const color_detector_msgs::TargetPosition &target_position);
     void process();
-    std::vector<std::string> colors;
-    std::vector<ThresholdHSV> param_hsvs;
-    std::vector<bool> use_colors;
-    bool only_publish_mask_points;
-    bool publish_target_points;
+    std::vector<std::string> colors_;
+    std::vector<ThresholdHSV> param_hsvs_;
+    std::vector<bool> use_colors_;
+    bool only_publish_mask_points_;
+    bool publish_target_points_;
 
  private:
     double TOLERANCE;
@@ -51,14 +52,14 @@ class PointCloudColorDetector {
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
 
-    ros::NodeHandle nh;
-    ros::NodeHandle private_nh;
+    ros::NodeHandle nh_;
+    ros::NodeHandle private_nh_;
 
-    ros::Subscriber pc_sub;
-    ros::Publisher target_position_pub;
-    std::vector<ros::Publisher> masked_pc_pubs;
-    std::vector<ros::Publisher> target_pc_pubs;
-    ros::ServiceServer color_enable_srv;
+    ros::Subscriber pc_sub_;
+    ros::Publisher target_position_pub_;
+    std::vector<ros::Publisher> masked_pc_pubs_;
+    std::vector<ros::Publisher> target_pc_pubs_;
+    ros::ServiceServer color_enable_srv_;
 };
 
 #endif  // POINT_CLOUD_COLOR_DETECTOR_H_
