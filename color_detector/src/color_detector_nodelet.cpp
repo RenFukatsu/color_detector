@@ -1,9 +1,7 @@
 #include <dynamic_reconfigure/server.h>
-#include <ros/ros.h>
-
-#include <ros/ros.h>
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
+#include <ros/ros.h>
 
 #include "color_detector_params/hsv.h"
 #include "image_color_detector/image_color_detector.h"
@@ -15,7 +13,8 @@ class ColorDetector : public nodelet::Nodelet {
     virtual void onInit() {
         nh_ = getNodeHandle();
         private_nh_ = getPrivateNodeHandle();
-        point_cloud_color_detector = std::shared_ptr<PointCloudColorDetector>(new PointCloudColorDetector(nh_, private_nh_));
+        point_cloud_color_detector =
+            std::shared_ptr<PointCloudColorDetector>(new PointCloudColorDetector(nh_, private_nh_));
         image_color_detector = std::shared_ptr<ImageColorDetector>(new ImageColorDetector(nh_, private_nh_));
 
         dynamic_reconfigure::Server<color_detector_params::HsvConfig>::CallbackType dr_callback;
@@ -43,5 +42,5 @@ class ColorDetector : public nodelet::Nodelet {
     std::shared_ptr<ImageColorDetector> image_color_detector;
     dynamic_reconfigure::Server<color_detector_params::HsvConfig> dr_server;
 };
-} // namespace color_detector
+}  // namespace color_detector
 PLUGINLIB_EXPORT_CLASS(color_detector::ColorDetector, nodelet::Nodelet);

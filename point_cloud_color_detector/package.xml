@@ -11,5 +11,8 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>pcl_ros</depend>
+  <depend>color_detector_msgs</depend>
+  <depend>color_detector_srvs</depend>
+  <depend>color_detector_params</depend>
 
 </package>

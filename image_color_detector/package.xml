@@ -12,6 +12,8 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
+  <depend>color_detector_msgs</depend>
+  <depend>color_detector_params</depend>
 
   <export>
 
