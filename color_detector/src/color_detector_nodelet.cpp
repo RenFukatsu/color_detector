@@ -13,9 +13,8 @@ class ColorDetector : public nodelet::Nodelet {
     virtual void onInit() {
         nh_ = getNodeHandle();
         private_nh_ = getPrivateNodeHandle();
-        point_cloud_color_detector =
-            std::shared_ptr<PointCloudColorDetector>(new PointCloudColorDetector(nh_, private_nh_));
-        image_color_detector = std::shared_ptr<ImageColorDetector>(new ImageColorDetector(nh_, private_nh_));
+        point_cloud_color_detector = std::make_unique<PointCloudColorDetector>(nh_, private_nh_);
+        image_color_detector = std::make_unique<ImageColorDetector>(nh_, private_nh_);
 
         dynamic_reconfigure::Server<color_detector_params::HsvConfig>::CallbackType dr_callback;
         dr_callback = boost::bind(&ColorDetector::update_dr, this, _1, _2);
@@ -38,8 +37,8 @@ class ColorDetector : public nodelet::Nodelet {
  private:
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
-    std::shared_ptr<PointCloudColorDetector> point_cloud_color_detector;
-    std::shared_ptr<ImageColorDetector> image_color_detector;
+    std::unique_ptr<PointCloudColorDetector> point_cloud_color_detector;
+    std::unique_ptr<ImageColorDetector> image_color_detector;
     dynamic_reconfigure::Server<color_detector_params::HsvConfig> dr_server;
 };
 }  // namespace color_detector

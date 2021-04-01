@@ -19,7 +19,7 @@ struct ThresholdHSV {
 };
 
 inline void init(std::vector<std::string> &colors, std::vector<ThresholdHSV> &config_hsvs) {
-    colors = {"green", "red", "blue", "yellow", "gold", "black", "white"};
+    colors = {"green", "red", "blue", "yellow"};
     config_hsvs.resize(colors.size());
 }
 
@@ -30,9 +30,6 @@ inline void update_use_colors(const std::vector<std::string> &colors, const colo
         if (colors[i] == "blue") use_colors[i] = config.blue_enable;
         if (colors[i] == "green") use_colors[i] = config.green_enable;
         if (colors[i] == "yellow") use_colors[i] = config.yellow_enable;
-        if (colors[i] == "gold") use_colors[i] = config.gold_enable;
-        if (colors[i] == "black") use_colors[i] = config.black_enable;
-        if (colors[i] == "white") use_colors[i] = config.white_enable;
     }
 }
 
@@ -67,27 +64,6 @@ inline void update_hsv_params(const std::vector<std::string> &colors, const colo
             config_hsvs[i].upper.h = config.UPPER_YELLOW_H;
             config_hsvs[i].upper.s = config.UPPER_YELLOW_S;
             config_hsvs[i].upper.v = config.UPPER_YELLOW_V;
-        } else if (colors[i] == "gold") {
-            config_hsvs[i].lower.h = config.LOWER_GOLD_H;
-            config_hsvs[i].lower.s = config.LOWER_GOLD_S;
-            config_hsvs[i].lower.v = config.LOWER_GOLD_V;
-            config_hsvs[i].upper.h = config.UPPER_GOLD_H;
-            config_hsvs[i].upper.s = config.UPPER_GOLD_S;
-            config_hsvs[i].upper.v = config.UPPER_GOLD_V;
-        } else if (colors[i] == "black") {
-            config_hsvs[i].lower.h = config.LOWER_BLACK_H;
-            config_hsvs[i].lower.s = config.LOWER_BLACK_S;
-            config_hsvs[i].lower.v = config.LOWER_BLACK_V;
-            config_hsvs[i].upper.h = config.UPPER_BLACK_H;
-            config_hsvs[i].upper.s = config.UPPER_BLACK_S;
-            config_hsvs[i].upper.v = config.UPPER_BLACK_V;
-        } else if (colors[i] == "white") {
-            config_hsvs[i].lower.h = config.LOWER_WHITE_H;
-            config_hsvs[i].lower.s = config.LOWER_WHITE_S;
-            config_hsvs[i].lower.v = config.LOWER_WHITE_V;
-            config_hsvs[i].upper.h = config.UPPER_WHITE_H;
-            config_hsvs[i].upper.s = config.UPPER_WHITE_S;
-            config_hsvs[i].upper.v = config.UPPER_WHITE_V;
         }
     }
 }
