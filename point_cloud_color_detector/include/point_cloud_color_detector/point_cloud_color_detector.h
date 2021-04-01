@@ -27,17 +27,18 @@ class PointCloudColorDetector {
     void set_hsv_params();
     bool enable_color(color_detector_srvs::ColorEnable::Request &req, color_detector_srvs::ColorEnable::Response &res);
     void sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc);
-    void limit_point_cloud(const ThresholdHSV &thres_hsv, const pcl::PointCloud<pcl::PointXYZRGB> &pc,
-                           pcl::PointCloud<pcl::PointXYZRGB> &output);
-    int reduce_point_cloud(pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> pc);
-    void euclidean_clustering(const pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> &pc,
+    void mask_point_cloud(const ThresholdHSV &thres_hsv, const pcl::PointCloud<pcl::PointXYZRGB> &pc,
+                          const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &output);
+    void reduce_point_cloud(int mag, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc);
+    void publish_points(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc, const std_msgs::Header &header,
+                        const ros::Publisher &publisher);
+    void detect_target_cluster(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &masked_pc,
+                               const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &target_pc);
+    void euclidean_clustering(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc,
                               std::vector<pcl::PointIndices> &output);
-    void get_target_cluster(const pcl::PointCloud<pcl::PointXYZRGB> &pc, std::vector<pcl::PointIndices> &pc_indices,
-                            pcl::PointCloud<pcl::PointXYZRGB> &output);
-    color_detector_msgs::TargetPosition calc_target_position(const pcl::PointCloud<pcl::PointXYZRGB> &pc);
-    void detect_target_cluster(const ThresholdHSV &thres_hsv, const std_msgs::Header &header,
-                               const ros::Publisher &masked_pc_pub, const pcl::PointCloud<pcl::PointXYZRGB> &pc,
-                               pcl::PointCloud<pcl::PointXYZRGB> &output);
+    void get_target_cluster(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc, std::vector<pcl::PointIndices> &pc_indices,
+                            const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &output);
+    color_detector_msgs::TargetPosition calc_target_position(int mag, const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc);
     void save_csv(const color_detector_msgs::TargetPosition &target_position);
     void process();
     std::vector<std::string> colors_;

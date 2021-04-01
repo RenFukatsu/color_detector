@@ -11,8 +11,8 @@ PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHa
     masked_pc_pubs_.resize(colors_.size());
     target_pc_pubs_.resize(colors_.size());
     for (size_t i = 0; i < colors_.size(); i++) {
-        masked_pc_pubs_[i] = private_nh_.advertise<sensor_msgs::PointCloud2>("/cloud/masked/" + colors_[i] + "/raw", 1);
-        target_pc_pubs_[i] = private_nh_.advertise<sensor_msgs::PointCloud2>("/cloud/target/" + colors_[i] + "/raw", 1);
+        masked_pc_pubs_[i] = private_nh_.advertise<sensor_msgs::PointCloud2>("masked/" + colors_[i] + "/cloud", 1);
+        target_pc_pubs_[i] = private_nh_.advertise<sensor_msgs::PointCloud2>("target/" + colors_[i] + "/cloud", 1);
     }
     color_enable_srv_ = nh_.advertiseService("color_enable", &PointCloudColorDetector::enable_color, this);
 
@@ -50,10 +50,57 @@ bool PointCloudColorDetector::enable_color(color_detector_srvs::ColorEnable::Req
     return true;
 }
 
-void PointCloudColorDetector::limit_point_cloud(const ThresholdHSV &thres_hsv,
-                                                const pcl::PointCloud<pcl::PointXYZRGB> &pc,
-                                                pcl::PointCloud<pcl::PointXYZRGB> &output) {
-    pcl::PointCloud<pcl::PointXYZRGB> masked_pc;
+void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc) {
+    auto start_time = ros::Time::now();
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
+    pcl::fromROSMsg(*received_pc, *rgb_pc);
+
+    for (size_t i = 0; i < colors_.size(); i++) {
+        if (!use_colors_[i]) continue;
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr masked_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
+        mask_point_cloud(param_hsvs_[i], *rgb_pc, masked_pc);
+
+        if (masked_pc->size() < MIN_CLUSTER_SIZE) {
+            ROS_WARN_STREAM("The number of points masked by HSV is too small. [" << masked_pc->size() << " points]");
+            continue;
+        }
+
+        if (only_publish_mask_points_) {
+            publish_points(masked_pc, received_pc->header, masked_pc_pubs_[i]);
+            continue;
+        }
+
+        int mag = masked_pc->size() / MAX_CLUSTER_SIZE + 1;
+        if (mag > 1) reduce_point_cloud(mag, masked_pc);
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
+        detect_target_cluster(masked_pc, target_pc);
+        ROS_DEBUG_STREAM("target cluster size : " << target_pc->size());
+
+        if (target_pc->empty()) {
+            ROS_WARN_STREAM("cannot find target");
+            continue;
+        }
+
+        color_detector_msgs::TargetPosition target_position = calc_target_position(mag, target_pc);
+        target_position.header = received_pc->header;
+        ROS_DEBUG_STREAM("finite cluster size : " << target_position.cluster_num);
+        target_position_pub_.publish(target_position);
+
+        if (publish_target_points_) {
+            publish_points(target_pc, received_pc->header, target_pc_pubs_[i]);
+            save_csv(target_position);
+        }
+    }
+
+    ROS_INFO_STREAM("[point_cloud_color_detector:sensor_callback] elasped time : "
+                    << (ros::Time::now() - start_time).toSec() << "[sec]");
+}
+
+void PointCloudColorDetector::mask_point_cloud(const ThresholdHSV &thres_hsv,
+                                               const pcl::PointCloud<pcl::PointXYZRGB> &pc,
+                                               const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &masked_pc) {
     for (const auto &rgb_point : pc) {
         pcl::PointXYZHSV hsv_point;
         pcl::PointXYZRGBtoXYZHSV(rgb_point, hsv_point);
@@ -64,29 +111,40 @@ void PointCloudColorDetector::limit_point_cloud(const ThresholdHSV &thres_hsv,
             thres_hsv.lower.s <= hsv_point.s * 255. && hsv_point.s * 255. <= thres_hsv.upper.s &&
             thres_hsv.lower.v <= hsv_point.v * 255. && hsv_point.v * 255. <= thres_hsv.upper.v &&
             isfinite(hsv_point.x) && isfinite(hsv_point.y) && isfinite(hsv_point.z)) {
-            masked_pc.push_back(rgb_point);
+            masked_pc->push_back(rgb_point);
         }
     }
     ROS_DEBUG_STREAM("lower hsv param : " << thres_hsv.lower.h << ' ' << thres_hsv.lower.s << ' ' << thres_hsv.lower.v);
     ROS_DEBUG_STREAM("upper hsv param : " << thres_hsv.upper.h << ' ' << thres_hsv.upper.s << ' ' << thres_hsv.upper.v);
-    output = std::move(masked_pc);
     return;
 }
 
-int PointCloudColorDetector::reduce_point_cloud(pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> pc) {
-    ROS_INFO_STREAM(pc->size() << " " << MAX_CLUSTER_SIZE);
-    if (pc->size() <= MAX_CLUSTER_SIZE) return 1;
-    int magnification = pc->size() / MAX_CLUSTER_SIZE + 1;
-    ROS_INFO_STREAM("mag : " << magnification);
+void PointCloudColorDetector::reduce_point_cloud(int mag, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc) {
     pcl::PointCloud<pcl::PointXYZRGB> res;
-    for (size_t i = 0; i < pc->size(); i += magnification) {
+    for (size_t i = 0; i < pc->size(); i += mag) {
         res.push_back(pc->at(i));
     }
     *pc = std::move(res);
-    return magnification;
+    return;
 }
 
-void PointCloudColorDetector::euclidean_clustering(const pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> &pc,
+void PointCloudColorDetector::publish_points(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc,
+                                             const std_msgs::Header &header, const ros::Publisher &publisher) {
+    sensor_msgs::PointCloud2 ros_pc;
+    pcl::toROSMsg(*pc, ros_pc);
+    ros_pc.header = header;
+    publisher.publish(ros_pc);
+    return;
+}
+
+void PointCloudColorDetector::detect_target_cluster(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &masked_pc,
+                                                    const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &target_pc) {
+    std::vector<pcl::PointIndices> pc_indices;
+    euclidean_clustering(masked_pc, pc_indices);
+    get_target_cluster(masked_pc, pc_indices, target_pc);
+}
+
+void PointCloudColorDetector::euclidean_clustering(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc,
                                                    std::vector<pcl::PointIndices> &output) {
     pcl::shared_ptr<pcl::search::KdTree<pcl::PointXYZRGB>> tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
     tree->setInputCloud(pc);
@@ -105,41 +163,39 @@ void PointCloudColorDetector::euclidean_clustering(const pcl::shared_ptr<pcl::Po
     return;
 }
 
-void PointCloudColorDetector::get_target_cluster(const pcl::PointCloud<pcl::PointXYZRGB> &pc,
+void PointCloudColorDetector::get_target_cluster(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc,
                                                  std::vector<pcl::PointIndices> &pc_indices,
-                                                 pcl::PointCloud<pcl::PointXYZRGB> &output) {
+                                                 const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &output) {
     static auto comp = [](const pcl::PointIndices &a, const pcl::PointIndices &b) -> bool {
         return a.indices.size() > b.indices.size();
     };
     sort(pc_indices.begin(), pc_indices.end(), comp);
 
-    pcl::PointCloud<pcl::PointXYZRGB> target_pc;
     for (const auto &point_indices : pc_indices) {
         bool is_target = true;
         pcl::PointCloud<pcl::PointXYZRGB> cluster;
         for (const auto &itr : point_indices.indices) {
-            cluster.push_back(pc.points.at(itr));
+            cluster.push_back(pc->points.at(itr));
             if (cluster.back().y < LOWEREST_TARGET_Y || HIGHEST_TARGET_Y < cluster.back().y) {
                 is_target = false;
                 break;
             }
         }
         if (is_target) {
-            target_pc = std::move(cluster);
-            break;
+            *output = std::move(cluster);
+            return;
         }
     }
-    output = std::move(target_pc);
     return;
 }
 
 color_detector_msgs::TargetPosition PointCloudColorDetector::calc_target_position(
-    const pcl::PointCloud<pcl::PointXYZRGB> &pc) {
+    int mag, const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc) {
     double sum_x = 0;
     double sum_y = 0;
     double sum_z = 0;
     int finite_count = 0;
-    for (const auto &point : pc) {
+    for (const auto &point : pc->points) {
         if (isfinite(point.x) && isfinite(point.y) && isfinite(point.z)) {
             sum_x += point.x;
             sum_y += point.y;
@@ -152,71 +208,9 @@ color_detector_msgs::TargetPosition PointCloudColorDetector::calc_target_positio
     target_position.x = sum_x / finite_count;
     target_position.y = sum_y / finite_count;
     target_position.z = sum_z / finite_count;
-    target_position.cluster_num = finite_count;
+    target_position.cluster_num = finite_count * mag;
 
     return target_position;
-}
-
-void PointCloudColorDetector::detect_target_cluster(const ThresholdHSV &thres_hsv, const std_msgs::Header &header,
-                                                    const ros::Publisher &masked_pc_pub,
-                                                    const pcl::PointCloud<pcl::PointXYZRGB> &pc,
-                                                    pcl::PointCloud<pcl::PointXYZRGB> &output) {
-    pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> masked_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
-    limit_point_cloud(thres_hsv, pc, *masked_pc);
-
-    if (masked_pc->size() < MIN_CLUSTER_SIZE) {
-        ROS_WARN_STREAM("The number of points limited by HSV is too small.");
-        return;
-    }
-    ROS_INFO_STREAM("masked cluster size : " << masked_pc->size());
-    int magnification = reduce_point_cloud(masked_pc);
-    ROS_INFO_STREAM("masked cluster size : " << masked_pc->size());
-
-    if (only_publish_mask_points_) {
-        sensor_msgs::PointCloud2 ros_masked_pc;
-        pcl::toROSMsg(*masked_pc, ros_masked_pc);
-        ros_masked_pc.header = header;
-        masked_pc_pub.publish(ros_masked_pc);
-        return;
-    }
-
-    std::vector<pcl::PointIndices> pc_indices;
-    euclidean_clustering(masked_pc, pc_indices);
-    pcl::PointCloud<pcl::PointXYZRGB> target_pc;
-    get_target_cluster(*masked_pc, pc_indices, target_pc);
-
-    output = std::move(target_pc);
-}
-
-void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc) {
-    auto start_time = ros::Time::now();
-    pcl::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> rgb_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::fromROSMsg(*received_pc, *rgb_pc);
-
-    for (size_t i = 0; i < colors_.size(); i++) {
-        if (!use_colors_[i]) continue;
-        pcl::PointCloud<pcl::PointXYZRGB> target_pc;
-        detect_target_cluster(param_hsvs_[i], received_pc->header, masked_pc_pubs_[i], *rgb_pc, target_pc);
-        ROS_DEBUG_STREAM("target cluster size : " << target_pc.size());
-
-        if (target_pc.empty()) continue;
-
-        color_detector_msgs::TargetPosition target_position = calc_target_position(target_pc);
-        target_position.header = received_pc->header;
-        ROS_DEBUG_STREAM("finite cluster size : " << target_position.cluster_num);
-        target_position_pub_.publish(target_position);
-
-        if (publish_target_points_) {
-            sensor_msgs::PointCloud2 ros_target_pc;
-            pcl::toROSMsg(target_pc, ros_target_pc);
-            ros_target_pc.header = received_pc->header;
-            target_pc_pubs_[i].publish(ros_target_pc);
-            save_csv(target_position);
-        }
-    }
-
-    ROS_INFO_STREAM("[point_cloud_color_detector:sensor_callback] elasped time : "
-                    << (ros::Time::now() - start_time).toSec() << "[sec]");
 }
 
 void PointCloudColorDetector::save_csv(const color_detector_msgs::TargetPosition &target_position) {
