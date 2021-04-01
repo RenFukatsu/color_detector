@@ -22,11 +22,11 @@ class ImageColorDetector {
     void image_callback(const sensor_msgs::ImageConstPtr &received_image);
     void to_cv_image(const sensor_msgs::Image &ros_image, cv::Mat &output_image);
     void filter_hsv(const cv::Mat &hsv_image, const ThresholdHSV &thres_hsv, cv::Mat &output_image);
-    void detect_target(const cv::Mat &binarized_image, cv::Mat &output_image,
+    void detect_target(const cv::Mat &binarized_image, int mag, cv::Mat &output_image,
                        std::vector<std::pair<int, int>> &output_pixels);
-    void form_cluster(int start_x, int start_y, const cv::Mat &mat, std::vector<std::vector<bool>> &reached,
+    void form_cluster(int start_x, int start_y, int mag, const cv::Mat &mat, std::vector<std::vector<bool>> &reached,
                       std::vector<std::pair<int, int>> &output_pixels);
-    void create_target_msg(std::string color, int width, const std::vector<std::pair<int, int>> &pixels,
+    void create_target_msg(std::string color, int width, int mag, const std::vector<std::pair<int, int>> &pixels,
                            color_detector_msgs::TargetAngle &output_msg);
     void create_target_image(const std_msgs::Header &header, const cv::Mat &bgr_image,
                              const std::vector<std::pair<int, int>> &pixels, sensor_msgs::ImagePtr &output_msg);
@@ -38,11 +38,15 @@ class ImageColorDetector {
     bool publish_target_image_;
 
  private:
+    int MIN_CLUSTER_SIZE;
+    int MAX_CLUSTER_SIZE;
+
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
 
     ros::Subscriber image_sub_;
     ros::Publisher target_angle_list_pub_;
+    std::vector<ros::Publisher> masked_image_pubs_;
     std::vector<ros::Publisher> target_image_pubs_;
 };
 

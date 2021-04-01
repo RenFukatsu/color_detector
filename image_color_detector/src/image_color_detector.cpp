@@ -2,12 +2,15 @@
 
 ImageColorDetector::ImageColorDetector() : ImageColorDetector(ros::NodeHandle(), ros::NodeHandle("~")) {}
 
-ImageColorDetector::ImageColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh) : nh_(nh), private_nh_(private_nh){
+ImageColorDetector::ImageColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh)
+    : nh_(nh), private_nh_(private_nh) {
     image_sub_ = nh_.subscribe("/in", 1, &ImageColorDetector::image_callback, this);
     target_angle_list_pub_ = nh_.advertise<color_detector_msgs::TargetAngleList>("/target/angle", 1);
 
     private_nh_.param("ONLY_PUBLISH_MASK_IMAGE", only_publish_mask_image_, false);
     private_nh_.param("PUBLISH_TARGET_IMAGE", publish_target_image_, false);
+    private_nh_.param("MIN_CLUSTER_SIZE", MIN_CLUSTER_SIZE, 20);
+    private_nh_.param("MAX_CLUSTER_SIZE", MAX_CLUSTER_SIZE, 5000);
     color_detector_params_hsv::init(colors_, param_hsvs_);
     set_hsv_params();
     set_image_pubs();
@@ -29,8 +32,10 @@ void ImageColorDetector::set_hsv_params() {
 
 void ImageColorDetector::set_image_pubs() {
     target_image_pubs_.resize(colors_.size());
+    masked_image_pubs_.resize(colors_.size());
     for (size_t i = 0; i < colors_.size(); i++) {
         target_image_pubs_[i] = private_nh_.advertise<sensor_msgs::Image>("target/" + colors_[i] + "/image_raw", 1);
+        masked_image_pubs_[i] = private_nh_.advertise<sensor_msgs::Image>("masked/" + colors_[i] + "/image_raw", 1);
     }
 }
 
@@ -51,14 +56,15 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
             cv::Mat masked_image;
             cv::bitwise_and(bgr_image, bgr_image, masked_image, binarized_hsv_image);
             image_msg = cv_bridge::CvImage(received_image->header, "bgr8", masked_image).toImageMsg();
-            target_image_pubs_[i].publish(image_msg);
+            masked_image_pubs_[i].publish(image_msg);
             continue;
         }
         cv::Mat target_image;
         std::vector<std::pair<int, int>> target_pixels;
-        detect_target(binarized_hsv_image, target_image, target_pixels);
+        const int mag = cv::countNonZero(binarized_hsv_image) / MAX_CLUSTER_SIZE + 1;
+        detect_target(binarized_hsv_image, mag, target_image, target_pixels);
         color_detector_msgs::TargetAngle target_msg;
-        create_target_msg(colors_[i], bgr_image.cols, target_pixels, target_msg);
+        create_target_msg(colors_[i], bgr_image.cols, mag, target_pixels, target_msg);
         targets.data.push_back(target_msg);
         if (publish_target_image_) {
             sensor_msgs::ImagePtr image_msg;
@@ -93,18 +99,18 @@ void ImageColorDetector::filter_hsv(const cv::Mat &hsv_image, const ThresholdHSV
     return;
 }
 
-void ImageColorDetector::detect_target(const cv::Mat &binarized_image, cv::Mat &output_image,
+void ImageColorDetector::detect_target(const cv::Mat &binarized_image, int mag, cv::Mat &output_image,
                                        std::vector<std::pair<int, int>> &output_pixels) {
     const int H = binarized_image.rows;
     const int W = binarized_image.cols;
 
     std::vector<std::vector<bool>> reached(H, std::vector<bool>(W, false));
     std::vector<std::pair<int, int>> target_pixels;
-    for (size_t h = 0; h < H; h++) {
-        for (size_t w = 0; w < W; w++) {
+    for (size_t h = 0; h < H; h += mag) {
+        for (size_t w = 0; w < W; w += mag) {
             if (reached[h][w]) continue;
             std::vector<std::pair<int, int>> pixels;
-            form_cluster(h, w, binarized_image, reached, pixels);
+            form_cluster(h, w, mag, binarized_image, reached, pixels);
             if (pixels.size() > target_pixels.size()) {
                 target_pixels = std::move(pixels);
             }
@@ -115,10 +121,10 @@ void ImageColorDetector::detect_target(const cv::Mat &binarized_image, cv::Mat &
     return;
 }
 
-void ImageColorDetector::form_cluster(int start_x, int start_y, const cv::Mat &mat,
+void ImageColorDetector::form_cluster(int start_x, int start_y, int mag, const cv::Mat &mat,
                                       std::vector<std::vector<bool>> &reached,
                                       std::vector<std::pair<int, int>> &output_pixels) {
-    static const std::vector<std::pair<int, int>> move_direction = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+    const std::vector<std::pair<int, int>> move_direction = {{0, mag}, {mag, 0}, {0, -mag}, {-mag, 0}};
 
     std::queue<std::pair<int, int>> que;
     que.emplace(start_x, start_y);
@@ -145,11 +151,11 @@ void ImageColorDetector::form_cluster(int start_x, int start_y, const cv::Mat &m
     return;
 }
 
-void ImageColorDetector::create_target_msg(std::string color, int width, const std::vector<std::pair<int, int>> &pixels,
+void ImageColorDetector::create_target_msg(std::string color, int width, int mag, const std::vector<std::pair<int, int>> &pixels,
                                            color_detector_msgs::TargetAngle &output_msg) {
     color_detector_msgs::TargetAngle target_msg;
     target_msg.color = color;
-    target_msg.cluster_num = pixels.size();
+    target_msg.cluster_num = pixels.size() * mag;
     // 0 <= x < H, 0 <= y < W
     int sum_x = 0;
     int sum_y = 0;
