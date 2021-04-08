@@ -19,11 +19,9 @@ find_package(OpenCV 4 REQUIRED)
 find_package(PCL 1.10 REQUIRED)
 
 catkin_package(
-    INCLUDE_DIRS include
 )
 
 include_directories(
-    include
     ${catkin_INCLUDE_DIRS}
 )
 

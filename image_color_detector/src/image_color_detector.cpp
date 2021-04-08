@@ -161,7 +161,7 @@ void ImageColorDetector::create_target_msg(std::string color, int width, int mag
     int sum_y = 0;
     for (const auto &pixel : pixels) {
         sum_x += pixel.first;
-        sum_y += pixel.first;
+        sum_y += pixel.second;
     }
     double ave_x = 1. * sum_x / pixels.size();
     double ave_y = 1. * sum_y / pixels.size();
