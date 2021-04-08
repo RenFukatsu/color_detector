@@ -30,7 +30,7 @@ class ImageColorDetector {
                            color_detector_msgs::TargetAngle &output_msg);
     void create_target_image(const std_msgs::Header &header, const cv::Mat &bgr_image,
                              const std::vector<std::pair<int, int>> &pixels, sensor_msgs::ImagePtr &output_msg);
-    double calc_angle(int target_position, int width);
+    double calc_angle(double target_position, int width);
     void process();
     std::vector<std::string> colors_;
     std::vector<ThresholdHSV> param_hsvs_;

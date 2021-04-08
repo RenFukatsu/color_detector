@@ -189,6 +189,6 @@ void ImageColorDetector::create_target_image(const std_msgs::Header &header, con
     return;
 }
 
-double ImageColorDetector::calc_angle(int target_position, int width) { return -180. + 360. * target_position / width; }
+double ImageColorDetector::calc_angle(double target_position, int width) { return -180. + 360. * target_position / width; }
 
 void ImageColorDetector::process() { ros::spin(); }

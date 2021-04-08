@@ -61,11 +61,11 @@
             <remap from="/depth_registered/image_rect" to="/camera/aligned_depth_to_color/image_raw" />
             <remap from="/depth_registered/points" to="/camera/depth_registered/points" />
         </node>
-        <node pkg="nodelet" type="nodelet" name="theta_s_converter" 
-                args="load theta_s_ros/image_converter_nodelet $(arg manager_name)" >
-            <remap from="/camera/image_raw" to="/theta_s/image_raw" />
-        </node>
     </group>
+    <node pkg="nodelet" type="nodelet" name="theta_s_converter" 
+            args="load theta_s_ros/image_converter_nodelet $(arg manager_name)" >
+        <remap from="/camera/image_raw" to="/theta_s/image_raw" />
+    </node>
 
     <node pkg="nodelet" type="nodelet" name="color_detector" 
           args="load color_detector/color_detector_nodelet $(arg manager_name)" >
