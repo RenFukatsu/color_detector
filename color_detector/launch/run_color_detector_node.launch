@@ -33,7 +33,6 @@
         </group>
     </group>
     <group if="$(arg is_bag)">
-        <param name="use_sim_time" value="true" />
         <node name="theta_s_republish" pkg="image_transport" type="republish" args="compressed raw">
             <remap from="in" to="/theta_s/image_raw" />
             <remap from="out" to="/theta_s/image_raw" />
