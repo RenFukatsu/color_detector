@@ -62,6 +62,7 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
         cv::Mat target_image;
         std::vector<std::pair<int, int>> target_pixels;
         const int mag = cv::countNonZero(binarized_hsv_image) / MAX_CLUSTER_SIZE + 1;
+        ROS_DEBUG_STREAM("masked_image_pixel_num [" << colors_[i] << "] : " << cv::countNonZero(binarized_hsv_image));
         detect_target(binarized_hsv_image, mag, target_image, target_pixels);
         color_detector_msgs::TargetAngle target_msg;
         create_target_msg(colors_[i], bgr_image.cols, mag, target_pixels, target_msg);

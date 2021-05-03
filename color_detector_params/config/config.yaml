@@ -1,7 +1,7 @@
 # for point_cloud_color_detector
 TOLERANCE: 0.2
-HIGHEST_TARGET_Y: 0.62
-LOWEREST_TARGET_Y: 0.08
+HIGHEST_TARGET_Y: 0.70
+LOWEREST_TARGET_Y: 0.00
 
 # for image_color_detector
 

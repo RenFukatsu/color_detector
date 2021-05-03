@@ -60,6 +60,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr masked_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
         mask_point_cloud(param_hsvs_[i], *rgb_pc, masked_pc);
+        ROS_DEBUG_STREAM("masked cluster size : " << masked_pc->size());
 
         if (masked_pc->size() < MIN_CLUSTER_SIZE) {
             ROS_WARN_STREAM("The number of points masked by HSV is too small. [" << masked_pc->size() << " points]");
@@ -98,7 +99,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
                 if (maxy < point.y) maxy = point.y;
                 if (miny > point.y) miny = point.y;
             }
-            ROS_INFO_STREAM("maxy = " << maxy << ", miny = " << miny);
+            ROS_DEBUG_STREAM("target heighest = " << maxy << ", lowerest = " << miny);
         }
     }
 
@@ -122,13 +123,12 @@ void PointCloudColorDetector::mask_point_cloud(const ThresholdHSV &thres_hsv,
             masked_pc->push_back(rgb_point);
         }
     }
-    ROS_DEBUG_STREAM("lower hsv param : " << thres_hsv.lower.h << ' ' << thres_hsv.lower.s << ' ' << thres_hsv.lower.v);
-    ROS_DEBUG_STREAM("upper hsv param : " << thres_hsv.upper.h << ' ' << thres_hsv.upper.s << ' ' << thres_hsv.upper.v);
     return;
 }
 
 void PointCloudColorDetector::reduce_point_cloud(int mag, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc) {
     pcl::PointCloud<pcl::PointXYZRGB> res;
+    res.header = pc->header;
     for (size_t i = 0; i < pc->size(); i += mag) {
         res.push_back(pc->at(i));
     }
