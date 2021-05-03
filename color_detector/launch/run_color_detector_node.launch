@@ -3,7 +3,7 @@
     <arg name="manager_name" default="nodelet_magager" />
     <arg name="is_bag" default="false" />
 
-    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" output="screen" >
+    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" >
         <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" />
     </node>
 

@@ -21,6 +21,8 @@ class ColorDetector : public nodelet::Nodelet {
         dr_server.setCallback(dr_callback);
     }
     void update_dr(color_detector_params::HsvConfig &config, uint32_t level) {
+        point_cloud_color_detector->HIGHEST_TARGET_Y = config.HIGHEST_TARGET_Y;
+        point_cloud_color_detector->LOWEREST_TARGET_Y = config.LOWEREST_TARGET_Y;
         point_cloud_color_detector->only_publish_mask_points_ = config.only_publish_mask;
         point_cloud_color_detector->publish_target_points_ = config.publish_target;
         image_color_detector->only_publish_mask_image_ = config.only_publish_mask;

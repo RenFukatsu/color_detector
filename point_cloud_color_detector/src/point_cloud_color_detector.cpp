@@ -91,10 +91,17 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
         if (publish_target_points_) {
             publish_points(target_pc, received_pc->header, target_pc_pubs_[i]);
             save_csv(target_position);
+            double maxy = -100;
+            double miny = 100;
+            for (const auto &point : target_pc->points) {
+                if (maxy < point.y) maxy = point.y;
+                if (miny > point.y) miny = point.y;
+            }
+            ROS_INFO_STREAM("maxy = " << maxy << ", miny = " << miny);
         }
     }
 
-    ROS_INFO_STREAM("[point_cloud_color_detector:sensor_callback] elasped time : "
+    ROS_INFO_STREAM("[point_cloud_color_detector] elasped time : "
                     << (ros::Time::now() - start_time).toSec() << "[sec]");
 }
 

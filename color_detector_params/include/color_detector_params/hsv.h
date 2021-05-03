@@ -19,7 +19,7 @@ struct ThresholdHSV {
 };
 
 inline void init(std::vector<std::string> &colors, std::vector<ThresholdHSV> &config_hsvs) {
-    colors = {"green", "red", "blue", "yellow"};
+    colors = {"green", "red", "blue", "yellow", "orange", "purple"};
     config_hsvs.resize(colors.size());
 }
 
@@ -30,6 +30,8 @@ inline void update_use_colors(const std::vector<std::string> &colors, const colo
         if (colors[i] == "blue") use_colors[i] = config.blue_enable;
         if (colors[i] == "green") use_colors[i] = config.green_enable;
         if (colors[i] == "yellow") use_colors[i] = config.yellow_enable;
+        if (colors[i] == "orange") use_colors[i] = config.orange_enable;
+        if (colors[i] == "purple") use_colors[i] = config.purple_enable;
     }
 }
 
@@ -64,6 +66,20 @@ inline void update_hsv_params(const std::vector<std::string> &colors, const colo
             config_hsvs[i].upper.h = config.UPPER_YELLOW_H;
             config_hsvs[i].upper.s = config.UPPER_YELLOW_S;
             config_hsvs[i].upper.v = config.UPPER_YELLOW_V;
+        } else if (colors[i] == "orange") {
+            config_hsvs[i].lower.h = config.LOWER_ORANGE_H;
+            config_hsvs[i].lower.s = config.LOWER_ORANGE_S;
+            config_hsvs[i].lower.v = config.LOWER_ORANGE_V;
+            config_hsvs[i].upper.h = config.UPPER_ORANGE_H;
+            config_hsvs[i].upper.s = config.UPPER_ORANGE_S;
+            config_hsvs[i].upper.v = config.UPPER_ORANGE_V;
+        } else if (colors[i] == "purple") {
+            config_hsvs[i].lower.h = config.LOWER_PURPLE_H;
+            config_hsvs[i].lower.s = config.LOWER_PURPLE_S;
+            config_hsvs[i].lower.v = config.LOWER_PURPLE_V;
+            config_hsvs[i].upper.h = config.UPPER_PURPLE_H;
+            config_hsvs[i].upper.s = config.UPPER_PURPLE_S;
+            config_hsvs[i].upper.v = config.UPPER_PURPLE_V;
         }
     }
 }

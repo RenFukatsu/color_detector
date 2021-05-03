@@ -73,7 +73,7 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
         }
     }
     target_angle_list_pub_.publish(targets);
-    ROS_INFO_STREAM("[image_color_detector:image_callback] elasped time : " << (ros::Time::now() - start_time).toSec()
+    ROS_INFO_STREAM("[image_color_detector] elasped time : " << (ros::Time::now() - start_time).toSec()
                                                                             << "[sec]");
 }
 

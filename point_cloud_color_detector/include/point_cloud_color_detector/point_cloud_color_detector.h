@@ -46,11 +46,11 @@ class PointCloudColorDetector {
     std::vector<bool> use_colors_;
     bool only_publish_mask_points_;
     bool publish_target_points_;
+    double HIGHEST_TARGET_Y;
+    double LOWEREST_TARGET_Y;
 
  private:
     double TOLERANCE;
-    double HIGHEST_TARGET_Y;
-    double LOWEREST_TARGET_Y;
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
 
