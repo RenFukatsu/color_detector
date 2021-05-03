@@ -85,6 +85,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
 
         color_detector_msgs::TargetPosition target_position = calc_target_position(mag, target_pc);
         target_position.header = received_pc->header;
+        target_position.color = colors_[i];
         ROS_DEBUG_STREAM("finite cluster size : " << target_position.cluster_num);
         target_position_pub_.publish(target_position);
 
