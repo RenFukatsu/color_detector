@@ -1,6 +1,5 @@
 #include "point_cloud_color_detector/point_cloud_color_detector.h"
 
-PointCloudColorDetector::PointCloudColorDetector() : PointCloudColorDetector(ros::NodeHandle(), ros::NodeHandle("~")) {}
 PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh)
     : nh_(nh), private_nh_(private_nh) {
     color_detector_params_hsv::init(colors_, param_hsvs_);

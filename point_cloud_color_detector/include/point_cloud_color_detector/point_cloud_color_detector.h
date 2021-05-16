@@ -22,8 +22,7 @@ using color_detector_params_hsv::ThresholdHSV;
 
 class PointCloudColorDetector {
  public:
-    PointCloudColorDetector();
-    explicit PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh);
+    PointCloudColorDetector(ros::NodeHandle nh = ros::NodeHandle(), ros::NodeHandle private_nh = ros::NodeHandle("~"));
     void set_hsv_params();
     bool enable_color(color_detector_srvs::ColorEnable::Request &req, color_detector_srvs::ColorEnable::Response &res);
     void sensor_callback(const sensor_msgs::PointCloud2ConstPtr &received_pc);
