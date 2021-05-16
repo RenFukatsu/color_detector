@@ -4,8 +4,8 @@ ImageColorDetector::ImageColorDetector() : ImageColorDetector(ros::NodeHandle(),
 
 ImageColorDetector::ImageColorDetector(ros::NodeHandle nh, ros::NodeHandle private_nh)
     : nh_(nh), private_nh_(private_nh) {
-    image_sub_ = nh_.subscribe("/equirectangular/image_raw", 1, &ImageColorDetector::image_callback, this);
-    target_angle_list_pub_ = nh_.advertise<color_detector_msgs::TargetAngleList>("/target/angle", 1);
+    image_sub_ = nh_.subscribe("equirectangular/image_raw", 1, &ImageColorDetector::image_callback, this);
+    target_angle_list_pub_ = nh_.advertise<color_detector_msgs::TargetAngleList>("target/angle", 1);
 
     private_nh_.param("ONLY_PUBLISH_MASK_IMAGE", only_publish_mask_image_, false);
     private_nh_.param("PUBLISH_TARGET_IMAGE", publish_target_image_, false);
