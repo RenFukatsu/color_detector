@@ -5,8 +5,8 @@ PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHa
     color_detector_params_hsv::init(colors_, param_hsvs_);
     use_colors_.assign(colors_.size(), false);
 
-    pc_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &PointCloudColorDetector::sensor_callback, this);
-    target_position_pub_ = nh_.advertise<color_detector_msgs::TargetPosition>("/target/position", 1);
+    pc_sub_ = nh_.subscribe("camera/depth_registered/points", 1, &PointCloudColorDetector::sensor_callback, this);
+    target_position_pub_ = nh_.advertise<color_detector_msgs::TargetPosition>("target/position", 1);
     masked_pc_pubs_.resize(colors_.size());
     target_pc_pubs_.resize(colors_.size());
     for (size_t i = 0; i < colors_.size(); i++) {
