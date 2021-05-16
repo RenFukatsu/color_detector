@@ -3,6 +3,8 @@
     <arg name="manager_name" default="nodelet_magager" />
     <arg name="is_bag" default="false" />
 
+    <arg name="use_colors" default="" />
+
     <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" >
         <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" />
     </node>
@@ -69,5 +71,6 @@
     <node pkg="nodelet" type="nodelet" name="color_detector" 
           args="load color_detector/color_detector_nodelet $(arg manager_name)" >
         <remap from="/in" to="equirectangular/image_raw" />
+        <param name="USE_COLORS" value="$(arg use_colors)" />
     </node>
 </launch>

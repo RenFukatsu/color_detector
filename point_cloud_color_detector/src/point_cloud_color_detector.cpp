@@ -23,6 +23,7 @@ PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHa
     private_nh_.param("ONLY_PUBLISH_MASK_POINTS", only_publish_mask_points_, false);
     private_nh_.param("PUBLISH_TARGET_POINTS", publish_target_points_, false);
     set_hsv_params();
+    set_color_enable_param();
 }
 
 void PointCloudColorDetector::set_hsv_params() {
@@ -36,6 +37,36 @@ void PointCloudColorDetector::set_hsv_params() {
         private_nh_.param("UPPER_" + uppercase_latter + "_H", param_hsvs_[i].upper.h, 0);
         private_nh_.param("UPPER_" + uppercase_latter + "_S", param_hsvs_[i].upper.s, 0);
         private_nh_.param("UPPER_" + uppercase_latter + "_V", param_hsvs_[i].upper.v, 0);
+    }
+}
+
+void PointCloudColorDetector::set_color_enable_param() {
+    std::string tmp;
+    private_nh_.param("USE_COLORS", tmp, std::string(""));
+    std::vector<std::string> enable_clrs;
+    std::string clr = "";
+    for (auto c : tmp) {
+        if (c == ',' || c == ' ') {
+            if (!clr.empty()) {
+                enable_clrs.push_back(clr);
+                clr.clear();
+            }
+        } else {
+            clr.push_back(c);
+        }
+    }
+    if (!clr.empty()) {
+        enable_clrs.push_back(clr);
+        clr.clear();
+    }
+
+    for (size_t i = 0; i < colors_.size(); i++) {
+        for (size_t j = 0; j < enable_clrs.size(); j++) {
+            if (colors_[i] == enable_clrs[j]) {
+                use_colors_[i] = true;
+                ROS_INFO_STREAM("enable " << colors_[i]);
+            }
+        }
     }
 }
 
