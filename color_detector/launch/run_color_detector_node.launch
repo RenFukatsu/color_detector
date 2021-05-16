@@ -3,7 +3,7 @@
     <arg name="manager_name" default="nodelet_magager" />
     <arg name="is_bag" default="false" />
 
-    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" output="screen" >
+    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" >
         <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" />
     </node>
 
@@ -34,41 +34,40 @@
     </group>
     <group if="$(arg is_bag)">
         <node name="theta_s_republish" pkg="image_transport" type="republish" args="compressed raw">
-            <remap from="in" to="/theta_s/image_raw" />
-            <remap from="out" to="/theta_s/image_raw" />
+            <remap from="in" to="theta_s/image_raw" />
+            <remap from="out" to="theta_s/image_raw" />
         </node>
 
         <node name="depth_republish" pkg="image_transport" type="republish" args="compressed raw">
-            <remap from="in" to="/camera/aligned_depth_to_color/image_raw" />
-            <remap from="out" to="/camera/aligned_depth_to_color/image_raw" />
+            <remap from="in" to="camera/aligned_depth_to_color/image_raw" />
+            <remap from="out" to="camera/aligned_depth_to_color/image_raw" />
         </node>
 
         <node name="color_republish" pkg="image_transport" type="republish" args="compressed raw">
-            <remap from="in" to="/camera/color/image_rect_color" />
-            <remap from="out" to="/camera/color/image_rect_color" />
+            <remap from="in" to="camera/color/image_rect_color" />
+            <remap from="out" to="camera/color/image_rect_color" />
         </node>
 
-        <arg name="image_raw_topic" default="/theta_s/image_raw" />
-        <group ns="theta_s">
-            <node pkg="theta_s_ros" type="image_converter" name="converter">
-                <remap from="/camera/image_raw" to="$(arg image_raw_topic)" />
-            </node>
-        </group>
+        <arg name="image_raw_topic" default="theta_s/image_raw" />
+        <node pkg="theta_s_ros" type="image_converter" name="converter">
+            <remap from="/camera/image_raw" to="$(arg image_raw_topic)" />
+            <remap from="/equirectangular/image_raw" to="equirectangular/image_raw" />
+        </node>
 
         <node pkg="nodelet" type="nodelet" name="point_cloud_xyzrgb" args="load depth_image_proc/point_cloud_xyzrgb $(arg manager_name) false">
-            <remap from="/rgb/camera_info" to="/camera/color/camera_info" />
-            <remap from="/rgb/image_rect_color" to="/camera/color/image_rect_color" />
-            <remap from="/depth_registered/image_rect" to="/camera/aligned_depth_to_color/image_raw" />
-            <remap from="/depth_registered/points" to="/camera/depth_registered/points" />
+            <remap from="/rgb/camera_info" to="camera/color/camera_info" />
+            <remap from="/rgb/image_rect_color" to="camera/color/image_rect_color" />
+            <remap from="/depth_registered/image_rect" to="camera/aligned_depth_to_color/image_raw" />
+            <remap from="/depth_registered/points" to="camera/depth_registered/points" />
         </node>
     </group>
     <node pkg="nodelet" type="nodelet" name="theta_s_converter" 
             args="load theta_s_ros/image_converter_nodelet $(arg manager_name)" >
-        <remap from="/camera/image_raw" to="/theta_s/image_raw" />
+        <remap from="/camera/image_raw" to="theta_s/image_raw" />
     </node>
 
     <node pkg="nodelet" type="nodelet" name="color_detector" 
           args="load color_detector/color_detector_nodelet $(arg manager_name)" >
-        <remap from="/in" to="/equirectangular/image_raw" />
+        <remap from="/in" to="equirectangular/image_raw" />
     </node>
 </launch>
