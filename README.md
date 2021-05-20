@@ -29,10 +29,16 @@ catkin build
 - /target/angle ([color_detector_msg/TargetAngleList](https://github.com/RenFukatsu/color_detector/blob/master/color_detector_msgs/msg/TargetAngleList.msg))
 - /target/position ([color_detector_msg/TargetPosition](https://github.com/RenFukatsu/color_detector/blob/master/color_detector_msgs/msg/TargetPosition.msg))
 #### for debug
-- /color_detector/masked/$COLOR/cloud (sensor_msgs/PointCloud2)
-- /color_detector/masked/$COLOR/image_raw (sensor_msgs/Image)
-- /color_detector/target/$COLOR/cloud (sensor_msgs/PointCloud2)
-- /color_detector/target/$COLOR/image_raw (sensor_msgs/Image)
+- dynamic reconfigure: only_publish_mask = true
+  - /color_detector/masked/$COLOR/cloud (sensor_msgs/PointCloud2)
+    - realsense
+  - /color_detector/masked/$COLOR/image_raw (sensor_msgs/Image)
+    - theta s
+- dynamic reconfigure: publish_target = true
+  - /color_detector/target/$COLOR/cloud (sensor_msgs/PointCloud2)
+    - realsense
+  - /color_detector/target/$COLOR/image_raw (sensor_msgs/Image)
+    - theta s
 
 ## How to Use
 Theta S in live mode and then
@@ -40,9 +46,20 @@ Theta S in live mode and then
 roslaunch color_detector run_color_detector_node.launch
 ```
 
-### with bagfile
+### arguments
+- is_bag : use bagfile
+- use_colors : enable colors
+ex)
+bash
+```bash
+roslaunch color_detector run_color_detector_node.launch is_bag:=true use_colors:=blue
 ```
-roslaunch color_detector run_color_detector_node.launch is_bag:=true
+yaml
+```yaml
+<include file="$(find color_detector)/launch/run_color_detector_node.launch" >
+  <arg name="is_bag" default="true" />
+  <arg name="use_colors" default="green,red,blue" />
+</include>
 ```
 
 ## How to Debug
