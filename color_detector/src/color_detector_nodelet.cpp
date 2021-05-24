@@ -27,8 +27,11 @@ class ColorDetector : public nodelet::Nodelet {
         point_cloud_color_detector->publish_target_points_ = config.publish_target;
         image_color_detector->only_publish_mask_image_ = config.only_publish_mask;
         image_color_detector->publish_target_image_ = config.publish_target;
-        color_detector_params_hsv::update_use_colors(point_cloud_color_detector->colors_, config,
-                                                     point_cloud_color_detector->use_colors_);
+        if (!private_nh_.hasParam("USE_COLORS")) {
+            color_detector_params_hsv::update_use_colors(point_cloud_color_detector->colors_,
+                                                         config,
+                                                         point_cloud_color_detector->use_colors_);
+        }
         color_detector_params_hsv::update_hsv_params(point_cloud_color_detector->colors_, config,
                                                      point_cloud_color_detector->param_hsvs_);
         color_detector_params_hsv::update_hsv_params(image_color_detector->colors_, config,

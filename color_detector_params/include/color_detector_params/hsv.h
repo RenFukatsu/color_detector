@@ -23,8 +23,9 @@ inline void init(std::vector<std::string> &colors, std::vector<ThresholdHSV> &co
     config_hsvs.resize(colors.size());
 }
 
-inline void update_use_colors(const std::vector<std::string> &colors, const color_detector_params::HsvConfig &config,
-                       std::vector<bool> &use_colors) {
+inline void update_use_colors(const std::vector<std::string> &colors,
+                              const color_detector_params::HsvConfig &config,
+                              std::vector<bool> &use_colors) {
     for (size_t i = 0; i < colors.size(); i++) {
         if (colors[i] == "red") use_colors[i] = config.red_enable;
         if (colors[i] == "blue") use_colors[i] = config.blue_enable;
@@ -33,10 +34,15 @@ inline void update_use_colors(const std::vector<std::string> &colors, const colo
         if (colors[i] == "orange") use_colors[i] = config.orange_enable;
         if (colors[i] == "purple") use_colors[i] = config.purple_enable;
     }
+    ROS_INFO_STREAM(std::boolalpha
+                    << "red: " << config.red_enable << ", green: " << config.green_enable
+                    << ", blue: " << config.blue_enable << ", orange: " << config.orange_enable
+                    << ", yellow: " << config.yellow_enable << ", purple: " << config.purple_enable);
 }
 
-inline void update_hsv_params(const std::vector<std::string> &colors, const color_detector_params::HsvConfig &config,
-                       std::vector<ThresholdHSV> &config_hsvs) {
+inline void update_hsv_params(const std::vector<std::string> &colors,
+                              const color_detector_params::HsvConfig &config,
+                              std::vector<ThresholdHSV> &config_hsvs) {
     for (size_t i = 0; i < colors.size(); i++) {
         if (colors[i] == "red") {
             config_hsvs[i].lower.h = config.LOWER_RED_H;

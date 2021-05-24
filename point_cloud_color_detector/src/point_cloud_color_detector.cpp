@@ -23,7 +23,7 @@ PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHa
     private_nh_.param("ONLY_PUBLISH_MASK_POINTS", only_publish_mask_points_, false);
     private_nh_.param("PUBLISH_TARGET_POINTS", publish_target_points_, false);
     set_hsv_params();
-    set_color_enable_param();
+    if (private_nh_.hasParam("USE_COLORS")) set_color_enable_param();
 }
 
 void PointCloudColorDetector::set_hsv_params() {
@@ -42,7 +42,7 @@ void PointCloudColorDetector::set_hsv_params() {
 
 void PointCloudColorDetector::set_color_enable_param() {
     std::string tmp;
-    private_nh_.param("USE_COLORS", tmp, std::string(""));
+    private_nh_.getParam("USE_COLORS", tmp);
     std::vector<std::string> enable_clrs;
     std::string clr = "";
     for (auto c : tmp) {
@@ -64,7 +64,7 @@ void PointCloudColorDetector::set_color_enable_param() {
         for (size_t j = 0; j < enable_clrs.size(); j++) {
             if (colors_[i] == enable_clrs[j]) {
                 use_colors_[i] = true;
-                ROS_INFO_STREAM("enable " << colors_[i]);
+                ROS_INFO_STREAM("use color enable " << colors_[i]);
             }
         }
     }
