@@ -13,38 +13,39 @@ class ColorDetector : public nodelet::Nodelet {
     virtual void onInit() {
         nh_ = getNodeHandle();
         private_nh_ = getPrivateNodeHandle();
-        point_cloud_color_detector = std::make_unique<PointCloudColorDetector>(nh_, private_nh_);
-        image_color_detector = std::make_unique<ImageColorDetector>(nh_, private_nh_);
+        point_cloud_color_detector_ptr_ = std::make_unique<PointCloudColorDetector>(nh_, private_nh_);
+        image_color_detector_ptr_ = std::make_unique<ImageColorDetector>(nh_, private_nh_);
+        dr_server_ptr_ = std::make_unique<dynamic_reconfigure::Server<color_detector_params::HsvConfig>>(private_nh_);
 
         dynamic_reconfigure::Server<color_detector_params::HsvConfig>::CallbackType dr_callback;
         dr_callback = boost::bind(&ColorDetector::update_dr, this, _1, _2);
-        dr_server.setCallback(dr_callback);
+        dr_server_ptr_->setCallback(dr_callback);
     }
     void update_dr(color_detector_params::HsvConfig &config, uint32_t level) {
-        point_cloud_color_detector->HIGHEST_TARGET_Y = config.HIGHEST_TARGET_Y;
-        point_cloud_color_detector->LOWEREST_TARGET_Y = config.LOWEREST_TARGET_Y;
-        point_cloud_color_detector->only_publish_mask_points_ = config.only_publish_mask;
-        point_cloud_color_detector->publish_target_points_ = config.publish_target;
-        image_color_detector->only_publish_mask_image_ = config.only_publish_mask;
-        image_color_detector->publish_target_image_ = config.publish_target;
+        point_cloud_color_detector_ptr_->HIGHEST_TARGET_Y = config.HIGHEST_TARGET_Y;
+        point_cloud_color_detector_ptr_->LOWEREST_TARGET_Y = config.LOWEREST_TARGET_Y;
+        point_cloud_color_detector_ptr_->only_publish_mask_points_ = config.only_publish_mask;
+        point_cloud_color_detector_ptr_->publish_target_points_ = config.publish_target;
+        image_color_detector_ptr_->only_publish_mask_image_ = config.only_publish_mask;
+        image_color_detector_ptr_->publish_target_image_ = config.publish_target;
         if (!private_nh_.hasParam("USE_COLORS")) {
-            color_detector_params_hsv::update_use_colors(point_cloud_color_detector->colors_,
+            color_detector_params_hsv::update_use_colors(point_cloud_color_detector_ptr_->colors_,
                                                          config,
-                                                         point_cloud_color_detector->use_colors_);
+                                                         point_cloud_color_detector_ptr_->use_colors_);
         }
-        color_detector_params_hsv::update_hsv_params(point_cloud_color_detector->colors_, config,
-                                                     point_cloud_color_detector->param_hsvs_);
-        color_detector_params_hsv::update_hsv_params(image_color_detector->colors_, config,
-                                                     image_color_detector->param_hsvs_);
+        color_detector_params_hsv::update_hsv_params(point_cloud_color_detector_ptr_->colors_, config,
+                                                     point_cloud_color_detector_ptr_->param_hsvs_);
+        color_detector_params_hsv::update_hsv_params(image_color_detector_ptr_->colors_, config,
+                                                     image_color_detector_ptr_->param_hsvs_);
     }
     void process() { ros::spin(); }
 
  private:
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
-    std::unique_ptr<PointCloudColorDetector> point_cloud_color_detector;
-    std::unique_ptr<ImageColorDetector> image_color_detector;
-    dynamic_reconfigure::Server<color_detector_params::HsvConfig> dr_server;
+    std::unique_ptr<PointCloudColorDetector> point_cloud_color_detector_ptr_;
+    std::unique_ptr<ImageColorDetector> image_color_detector_ptr_;
+    std::unique_ptr<dynamic_reconfigure::Server<color_detector_params::HsvConfig>> dr_server_ptr_;
 };
 }  // namespace color_detector
 PLUGINLIB_EXPORT_CLASS(color_detector::ColorDetector, nodelet::Nodelet);
