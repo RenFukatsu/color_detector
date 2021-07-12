@@ -114,10 +114,11 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
             continue;
         }
 
-        color_detector_msgs::TargetPosition target_position = calc_target_position(mag, target_pc);
-        target_position.header = received_pc->header;
-        target_position.color = colors_[i];
-        ROS_DEBUG_STREAM("finite cluster size : " << target_position.cluster_num);
+        color_detector_msgs::TargetPosition::Ptr target_position =
+            boost::make_shared<color_detector_msgs::TargetPosition>(calc_target_position(mag, target_pc));
+        target_position->header = received_pc->header;
+        target_position->color = colors_[i];
+        ROS_DEBUG_STREAM("finite cluster size : " << target_position->cluster_num);
         target_position_pub_.publish(target_position);
 
         if (publish_target_points_) {
@@ -133,8 +134,8 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
         }
     }
 
-    ROS_INFO_STREAM("[point_cloud_color_detector] elasped time : "
-                    << (ros::Time::now() - start_time).toSec() << "[sec]");
+    ROS_INFO_STREAM("[point_cloud_color_detector] elasped time : " << (ros::Time::now() - start_time).toSec()
+                                                                   << "[sec]");
 }
 
 void PointCloudColorDetector::mask_point_cloud(const ThresholdHSV &thres_hsv,
@@ -168,9 +169,9 @@ void PointCloudColorDetector::reduce_point_cloud(int mag, const pcl::PointCloud<
 
 void PointCloudColorDetector::publish_points(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc,
                                              const std_msgs::Header &header, const ros::Publisher &publisher) {
-    sensor_msgs::PointCloud2 ros_pc;
-    pcl::toROSMsg(*pc, ros_pc);
-    ros_pc.header = header;
+    sensor_msgs::PointCloud2::Ptr ros_pc;
+    pcl::toROSMsg(*pc, *ros_pc);
+    ros_pc->header = header;
     publisher.publish(ros_pc);
     return;
 }
@@ -251,15 +252,15 @@ color_detector_msgs::TargetPosition PointCloudColorDetector::calc_target_positio
     return target_position;
 }
 
-void PointCloudColorDetector::save_csv(const color_detector_msgs::TargetPosition &target_position) {
+void PointCloudColorDetector::save_csv(const color_detector_msgs::TargetPosition::ConstPtr &target_position) {
     static auto start_time = ros::Time::now();
     static std::ofstream ofs("/home/amsl/dist.csv");
-    double x = target_position.x;
-    double y = target_position.y;
-    double z = target_position.z;
+    double x = target_position->x;
+    double y = target_position->y;
+    double z = target_position->z;
     if (!only_publish_mask_points_)
         ofs << (ros::Time::now() - start_time).toSec() << ',' << sqrt(x * x + z * z) << ','
-            << target_position.cluster_num << ',' << x << ',' << y << ',' << z << std::endl;
+            << target_position->cluster_num << ',' << x << ',' << y << ',' << z << std::endl;
     return;
 }
 
