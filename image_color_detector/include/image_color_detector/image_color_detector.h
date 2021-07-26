@@ -38,6 +38,7 @@ class ImageColorDetector {
     bool publish_target_image_;
 
  private:
+    std::string ROOMBA;
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
 

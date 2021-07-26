@@ -9,6 +9,7 @@ ImageColorDetector::ImageColorDetector(ros::NodeHandle nh, ros::NodeHandle priva
 
     private_nh_.param("ONLY_PUBLISH_MASK_IMAGE", only_publish_mask_image_, false);
     private_nh_.param("PUBLISH_TARGET_IMAGE", publish_target_image_, false);
+    private_nh_.param("ROOMBA", ROOMBA, std::string("roomba0"));
     private_nh_.param("MIN_CLUSTER_SIZE", MIN_CLUSTER_SIZE, 20);
     private_nh_.param("MAX_CLUSTER_SIZE", MAX_CLUSTER_SIZE, 5000);
     color_detector_params_hsv::init(colors_, param_hsvs_);
@@ -48,6 +49,7 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
 
     color_detector_msgs::TargetAngleList targets;
     targets.header = received_image->header;
+    targets.my_number = ROOMBA.back() - '0';
     for (size_t i = 0; i < colors_.size(); i++) {
         cv::Mat binarized_hsv_image;
         filter_hsv(hsv_image, param_hsvs_[i], binarized_hsv_image);
@@ -74,8 +76,7 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
         }
     }
     target_angle_list_pub_.publish(targets);
-    ROS_INFO_STREAM("[image_color_detector] elasped time : " << (ros::Time::now() - start_time).toSec()
-                                                                            << "[sec]");
+    ROS_INFO_STREAM("[image_color_detector] elasped time : " << (ros::Time::now() - start_time).toSec() << "[sec]");
 }
 
 void ImageColorDetector::to_cv_image(const sensor_msgs::Image &ros_image, cv::Mat &output_image) {
@@ -152,7 +153,8 @@ void ImageColorDetector::form_cluster(int start_x, int start_y, int mag, const c
     return;
 }
 
-void ImageColorDetector::create_target_msg(std::string color, int width, int mag, const std::vector<std::pair<int, int>> &pixels,
+void ImageColorDetector::create_target_msg(std::string color, int width, int mag,
+                                           const std::vector<std::pair<int, int>> &pixels,
                                            color_detector_msgs::TargetAngle &output_msg) {
     color_detector_msgs::TargetAngle target_msg;
     target_msg.color = color;
@@ -190,6 +192,8 @@ void ImageColorDetector::create_target_image(const std_msgs::Header &header, con
     return;
 }
 
-double ImageColorDetector::calc_angle(double target_position, int width) { return -180. + 360. * target_position / width; }
+double ImageColorDetector::calc_angle(double target_position, int width) {
+    return -180. + 360. * target_position / width;
+}
 
 void ImageColorDetector::process() { ros::spin(); }

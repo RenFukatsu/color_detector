@@ -6,8 +6,7 @@
 
     <arg name="use_colors" default="" />
 
-    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" >
-        <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" />
+    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" output="screen">
     </node>
 
     <group unless="$(arg is_bag)">
@@ -73,6 +72,8 @@
     <node pkg="nodelet" type="nodelet" name="color_detector"
           args="load color_detector/color_detector_nodelet /$(arg roomba)/$(arg manager_name)" >
         <remap from="/in" to="equirectangular/image_raw" />
+        <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" />
         <param name="USE_COLORS" value="$(arg use_colors)" />
+        <param name="ROOMBA" value="$(arg roomba)" />
     </node>
 </launch>

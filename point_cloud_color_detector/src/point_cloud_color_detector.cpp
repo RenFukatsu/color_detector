@@ -24,6 +24,8 @@ PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHa
     private_nh_.param("PUBLISH_TARGET_POINTS", publish_target_points_, false);
     set_hsv_params();
     if (private_nh_.hasParam("USE_COLORS")) set_color_enable_param();
+
+    print_all_params();
 }
 
 void PointCloudColorDetector::set_hsv_params() {
@@ -70,6 +72,30 @@ void PointCloudColorDetector::set_color_enable_param() {
     }
 }
 
+void PointCloudColorDetector::print_all_params() {
+    ROS_INFO_STREAM("TOLERANCE : " << TOLERANCE);
+    ROS_INFO_STREAM("HIGHEST_TARGET_Y : " << HIGHEST_TARGET_Y);
+    ROS_INFO_STREAM("LOWEREST_TARGET_Y : " << LOWEREST_TARGET_Y);
+    ROS_INFO_STREAM("MIN_CLUSTER_SIZE : " << MIN_CLUSTER_SIZE);
+    ROS_INFO_STREAM("MAX_CLUSTER_SIZE : " << MAX_CLUSTER_SIZE);
+    ROS_INFO_STREAM("ONLY_PUBLISH_MASK_POINTS : " << (only_publish_mask_points_ ? "true" : "false"));
+    ROS_INFO_STREAM("PUBLISH_TARGET_POINTS : " << (publish_target_points_ ? "true" : "false"));
+    for (size_t i = 0; i < colors_.size(); i++) {
+        std::string uppercase_latter;
+        uppercase_latter.resize(colors_[i].size());
+        std::transform(colors_[i].begin(), colors_[i].end(), uppercase_latter.begin(), toupper);
+        ROS_INFO_STREAM("LOWER_" + uppercase_latter + "_H : " << param_hsvs_[i].lower.h);
+        ROS_INFO_STREAM("LOWER_" + uppercase_latter + "_S : " << param_hsvs_[i].lower.s);
+        ROS_INFO_STREAM("LOWER_" + uppercase_latter + "_V : " << param_hsvs_[i].lower.v);
+        ROS_INFO_STREAM("UPPER_" + uppercase_latter + "_H : " << param_hsvs_[i].upper.h);
+        ROS_INFO_STREAM("UPPER_" + uppercase_latter + "_S : " << param_hsvs_[i].upper.s);
+        ROS_INFO_STREAM("UPPER_" + uppercase_latter + "_V : " << param_hsvs_[i].upper.v);
+    }
+    for (size_t i = 0; i < colors_.size(); i++) {
+        ROS_INFO_STREAM("ENABLE " << colors_[i] << " : " << (use_colors_[i] ? "true" : "false"));
+    }
+}
+
 bool PointCloudColorDetector::enable_color(color_detector_srvs::ColorEnable::Request &req,
                                            color_detector_srvs::ColorEnable::Response &res) {
     for (size_t i = 0; i < colors_.size(); i++) {
@@ -93,7 +119,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
         ROS_DEBUG_STREAM("masked cluster size : " << masked_pc->size());
 
         if (masked_pc->size() < MIN_CLUSTER_SIZE) {
-            ROS_WARN_STREAM("The number of points masked by HSV is too small. [" << masked_pc->size() << " points]");
+            ROS_WARN_STREAM("[" << colors_[i] << "] : The number of points masked by HSV is too small. [" << masked_pc->size() << " points]");
             continue;
         }
 
@@ -110,7 +136,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
         ROS_DEBUG_STREAM("target cluster size : " << target_pc->size());
 
         if (target_pc->empty()) {
-            ROS_WARN_STREAM("cannot find target");
+            ROS_WARN_STREAM("[" << colors_[i] << "] : cannot find target");
             continue;
         }
 
