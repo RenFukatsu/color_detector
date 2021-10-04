@@ -16,26 +16,27 @@ class ColorDetector : public nodelet::Nodelet {
         point_cloud_color_detector_ptr_ = std::make_unique<PointCloudColorDetector>(nh_, private_nh_);
         image_color_detector_ptr_ = std::make_unique<ImageColorDetector>(nh_, private_nh_);
         dr_server_ptr_ = std::make_unique<dynamic_reconfigure::Server<color_detector_params::HsvConfig>>(private_nh_);
+        private_nh_.param("ROOMBA", roomba, std::string(""));
 
         dynamic_reconfigure::Server<color_detector_params::HsvConfig>::CallbackType dr_callback;
         dr_callback = boost::bind(&ColorDetector::update_dr, this, _1, _2);
         dr_server_ptr_->setCallback(dr_callback);
     }
+
     void update_dr(color_detector_params::HsvConfig &config, uint32_t level) {
         point_cloud_color_detector_ptr_->HIGHEST_TARGET_Y = config.HIGHEST_TARGET_Y;
         point_cloud_color_detector_ptr_->LOWEREST_TARGET_Y = config.LOWEREST_TARGET_Y;
         point_cloud_color_detector_ptr_->only_publish_mask_points_ = config.only_publish_mask;
-        point_cloud_color_detector_ptr_->publish_target_points_ = config.publish_target;
         image_color_detector_ptr_->only_publish_mask_image_ = config.only_publish_mask;
+        point_cloud_color_detector_ptr_->publish_target_points_ = config.publish_target;
         image_color_detector_ptr_->publish_target_image_ = config.publish_target;
         if (!private_nh_.hasParam("USE_COLORS")) {
-            color_detector_params_hsv::update_use_colors(point_cloud_color_detector_ptr_->colors_,
-                                                         config,
+            color_detector_params_hsv::update_use_colors(point_cloud_color_detector_ptr_->colors_, config,
                                                          point_cloud_color_detector_ptr_->use_colors_);
         }
-        color_detector_params_hsv::update_hsv_params(point_cloud_color_detector_ptr_->colors_, config,
+        color_detector_params_hsv::update_hsv_params(point_cloud_color_detector_ptr_->colors_, config, roomba,
                                                      point_cloud_color_detector_ptr_->param_hsvs_);
-        color_detector_params_hsv::update_hsv_params(image_color_detector_ptr_->colors_, config,
+        color_detector_params_hsv::update_hsv_params(image_color_detector_ptr_->colors_, config, roomba,
                                                      image_color_detector_ptr_->param_hsvs_);
     }
     void process() { ros::spin(); }
@@ -43,6 +44,7 @@ class ColorDetector : public nodelet::Nodelet {
  private:
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
+    std::string roomba;
     std::unique_ptr<PointCloudColorDetector> point_cloud_color_detector_ptr_;
     std::unique_ptr<ImageColorDetector> image_color_detector_ptr_;
     std::unique_ptr<dynamic_reconfigure::Server<color_detector_params::HsvConfig>> dr_server_ptr_;

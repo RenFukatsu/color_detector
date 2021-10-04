@@ -22,12 +22,12 @@ void ImageColorDetector::set_hsv_params() {
         std::string uppercase_latter;
         uppercase_latter.resize(colors_[i].size());
         std::transform(colors_[i].begin(), colors_[i].end(), uppercase_latter.begin(), toupper);
-        private_nh_.param("LOWER_" + uppercase_latter + "_H", param_hsvs_[i].lower.h, 0);
-        private_nh_.param("LOWER_" + uppercase_latter + "_S", param_hsvs_[i].lower.s, 0);
-        private_nh_.param("LOWER_" + uppercase_latter + "_V", param_hsvs_[i].lower.v, 0);
-        private_nh_.param("UPPER_" + uppercase_latter + "_H", param_hsvs_[i].upper.h, 0);
-        private_nh_.param("UPPER_" + uppercase_latter + "_S", param_hsvs_[i].upper.s, 0);
-        private_nh_.param("UPPER_" + uppercase_latter + "_V", param_hsvs_[i].upper.v, 0);
+        private_nh_.param(ROOMBA + "_LOWER_" + uppercase_latter + "_H", param_hsvs_[i].lower.h, 0);
+        private_nh_.param(ROOMBA + "_LOWER_" + uppercase_latter + "_S", param_hsvs_[i].lower.s, 0);
+        private_nh_.param(ROOMBA + "_LOWER_" + uppercase_latter + "_V", param_hsvs_[i].lower.v, 0);
+        private_nh_.param(ROOMBA + "_UPPER_" + uppercase_latter + "_H", param_hsvs_[i].upper.h, 0);
+        private_nh_.param(ROOMBA + "_UPPER_" + uppercase_latter + "_S", param_hsvs_[i].upper.s, 0);
+        private_nh_.param(ROOMBA + "_UPPER_" + uppercase_latter + "_V", param_hsvs_[i].upper.v, 0);
     }
 }
 
@@ -73,6 +73,8 @@ void ImageColorDetector::image_callback(const sensor_msgs::ImageConstPtr &receiv
             sensor_msgs::ImagePtr image_msg;
             create_target_image(received_image->header, bgr_image, target_pixels, image_msg);
             target_image_pubs_[i].publish(image_msg);
+            ROS_INFO_STREAM("target pixel num [" << colors_[i] << "] : " << target_pixels.size() * mag
+                                                 << " (mag=" << mag << ")");
         }
     }
     target_angle_list_pub_.publish(targets);
@@ -95,9 +97,20 @@ void ImageColorDetector::to_cv_image(const sensor_msgs::Image &ros_image, cv::Ma
 }
 
 void ImageColorDetector::filter_hsv(const cv::Mat &hsv_image, const ThresholdHSV &thres_hsv, cv::Mat &output_image) {
-    std::vector<int> upper = {thres_hsv.upper.h, thres_hsv.upper.s, thres_hsv.upper.v};
-    std::vector<int> lower = {thres_hsv.lower.h, thres_hsv.lower.s, thres_hsv.lower.v};
-    cv::inRange(hsv_image, lower, upper, output_image);
+    if (thres_hsv.lower.h <= thres_hsv.upper.h) {
+        std::vector<int> upper = {thres_hsv.upper.h, thres_hsv.upper.s, thres_hsv.upper.v};
+        std::vector<int> lower = {thres_hsv.lower.h, thres_hsv.lower.s, thres_hsv.lower.v};
+        cv::inRange(hsv_image, lower, upper, output_image);
+    } else {
+        cv::Mat image1, image2;
+        std::vector<int> upper = {180, thres_hsv.upper.s, thres_hsv.upper.v};
+        std::vector<int> lower = {thres_hsv.lower.h, thres_hsv.lower.s, thres_hsv.lower.v};
+        cv::inRange(hsv_image, lower, upper, image1);
+        upper = {thres_hsv.upper.h, thres_hsv.upper.s, thres_hsv.upper.v};
+        lower = {0, thres_hsv.lower.s, thres_hsv.lower.v};
+        cv::inRange(hsv_image, lower, upper, image2);
+        cv::bitwise_or(image1, image2, output_image);
+    }
     return;
 }
 

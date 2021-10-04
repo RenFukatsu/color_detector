@@ -73,6 +73,12 @@
           args="load color_detector/color_detector_nodelet /$(arg roomba)/$(arg manager_name)" >
         <remap from="/in" to="equirectangular/image_raw" />
         <rosparam command="load" file="$(find color_detector_params)/config/config.yaml" />
+        <rosparam command="load" file="$(find color_detector_params)/config/roomba1_config.yaml" />
+        <rosparam command="load" file="$(find color_detector_params)/config/roomba2_config.yaml" />
+        <rosparam command="load" file="$(find color_detector_params)/config/roomba3_config.yaml" />
+        <rosparam command="load" file="$(find color_detector_params)/config/roomba4_config.yaml" />
+        <rosparam command="load" file="$(find color_detector_params)/config/roomba5_config.yaml" />
+        <rosparam command="load" file="$(find color_detector_params)/config/roomba6_config.yaml" />
         <param name="USE_COLORS" value="$(arg use_colors)" />
         <param name="ROOMBA" value="$(arg roomba)" />
     </node>
