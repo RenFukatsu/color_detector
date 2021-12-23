@@ -43,7 +43,7 @@ class ColorDetector : public nodelet::Nodelet {
             color_detector_params_hsv::update_use_colors(point_cloud_color_detector_ptr_->colors_, config,
                                                          point_cloud_color_detector_ptr_->use_colors_);
         }
-        color_detector_params_hsv::update_hsv_params(point_cloud_color_detector_ptr_->colors_, config, roomba,
+        color_detector_params_hsv::update_hsv_params(point_cloud_color_detector_ptr_->colors_, config, "",
                                                      point_cloud_color_detector_ptr_->param_hsvs_);
         color_detector_params_hsv::update_hsv_params(image_color_detector_ptr_->colors_, config, roomba,
                                                      image_color_detector_ptr_->param_hsvs_);
