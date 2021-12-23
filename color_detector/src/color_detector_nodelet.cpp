@@ -17,6 +17,15 @@ class ColorDetector : public nodelet::Nodelet {
         image_color_detector_ptr_ = std::make_unique<ImageColorDetector>(nh_, private_nh_);
         dr_server_ptr_ = std::make_unique<dynamic_reconfigure::Server<color_detector_params::HsvConfig>>(private_nh_);
         private_nh_.param("ROOMBA", roomba, std::string(""));
+        std::string use_colors;
+        private_nh_.param("USE_COLORS", use_colors, std::string(""));
+        if (use_colors.empty()) {
+            ROS_INFO_STREAM("use color is empty");
+            enable_use_colors_ = false;
+        } else {
+            ROS_INFO_STREAM("use color is not empty");
+            enable_use_colors_ = true;
+        }
 
         dynamic_reconfigure::Server<color_detector_params::HsvConfig>::CallbackType dr_callback;
         dr_callback = boost::bind(&ColorDetector::update_dr, this, _1, _2);
@@ -30,7 +39,7 @@ class ColorDetector : public nodelet::Nodelet {
         image_color_detector_ptr_->only_publish_mask_image_ = config.only_publish_mask;
         point_cloud_color_detector_ptr_->publish_target_points_ = config.publish_target;
         image_color_detector_ptr_->publish_target_image_ = config.publish_target;
-        if (!private_nh_.hasParam("USE_COLORS")) {
+        if (!enable_use_colors_) {
             color_detector_params_hsv::update_use_colors(point_cloud_color_detector_ptr_->colors_, config,
                                                          point_cloud_color_detector_ptr_->use_colors_);
         }
@@ -45,6 +54,7 @@ class ColorDetector : public nodelet::Nodelet {
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
     std::string roomba;
+    bool enable_use_colors_;
     std::unique_ptr<PointCloudColorDetector> point_cloud_color_detector_ptr_;
     std::unique_ptr<ImageColorDetector> image_color_detector_ptr_;
     std::unique_ptr<dynamic_reconfigure::Server<color_detector_params::HsvConfig>> dr_server_ptr_;

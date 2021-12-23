@@ -111,12 +111,16 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
     pcl::fromROSMsg(*received_pc, *rgb_pc);
 
+    ROS_INFO_STREAM("start for");
     for (size_t i = 0; i < colors_.size(); i++) {
-        if (!use_colors_[i]) continue;
+        if (!use_colors_[i]) {
+            ROS_INFO_STREAM("ignore " << colors_[i]);
+            continue;
+        }
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr masked_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
         mask_point_cloud(param_hsvs_[i], *rgb_pc, masked_pc);
-        ROS_DEBUG_STREAM("masked cluster size : " << masked_pc->size());
+        ROS_INFO_STREAM("masked cluster size : " << masked_pc->size());
 
         if (masked_pc->size() < MIN_CLUSTER_SIZE) {
             ROS_WARN_STREAM("[" << colors_[i] << "] : The number of points masked by HSV is too small. [" << masked_pc->size() << " points]");
@@ -133,7 +137,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_pc = pcl::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
         detect_target_cluster(masked_pc, target_pc);
-        ROS_DEBUG_STREAM("target cluster size : " << target_pc->size());
+        ROS_INFO_STREAM("target cluster size : " << target_pc->size());
 
         if (target_pc->empty()) {
             ROS_WARN_STREAM("[" << colors_[i] << "] : cannot find target");
@@ -144,7 +148,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
             boost::make_shared<color_detector_msgs::TargetPosition>(calc_target_position(mag, target_pc));
         target_position->header = received_pc->header;
         target_position->color = colors_[i];
-        ROS_DEBUG_STREAM("finite cluster size : " << target_position->cluster_num);
+        ROS_INFO_STREAM("finite cluster size : " << target_position->cluster_num);
         target_position_pub_.publish(target_position);
 
         if (publish_target_points_) {
@@ -156,7 +160,7 @@ void PointCloudColorDetector::sensor_callback(const sensor_msgs::PointCloud2Cons
                 if (maxy < point.y) maxy = point.y;
                 if (miny > point.y) miny = point.y;
             }
-            ROS_DEBUG_STREAM("target heighest = " << maxy << ", lowerest = " << miny);
+            ROS_INFO_STREAM("target heighest = " << maxy << ", lowerest = " << miny);
         }
     }
 
@@ -195,9 +199,11 @@ void PointCloudColorDetector::reduce_point_cloud(int mag, const pcl::PointCloud<
 
 void PointCloudColorDetector::publish_points(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc,
                                              const std_msgs::Header &header, const ros::Publisher &publisher) {
-    sensor_msgs::PointCloud2::Ptr ros_pc;
-    pcl::toROSMsg(*pc, *ros_pc);
-    ros_pc->header = header;
+                                                 ROS_INFO("is here");
+    sensor_msgs::PointCloud2 ros_pc;
+    pcl::toROSMsg(*pc, ros_pc);
+    ros_pc.header = header;
+                                                 ROS_INFO("iss here");
     publisher.publish(ros_pc);
     return;
 }
