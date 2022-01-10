@@ -22,10 +22,31 @@ PointCloudColorDetector::PointCloudColorDetector(ros::NodeHandle nh, ros::NodeHa
     private_nh_.param("MAX_CLUSTER_SIZE", MAX_CLUSTER_SIZE, 5000);
     private_nh_.param("ONLY_PUBLISH_MASK_POINTS", only_publish_mask_points_, false);
     private_nh_.param("PUBLISH_TARGET_POINTS", publish_target_points_, false);
+    read_target_roombas();
     set_hsv_params();
     if (private_nh_.hasParam("USE_COLORS")) set_color_enable_param();
 
     print_all_params();
+}
+
+void PointCloudColorDetector::read_target_roombas() {
+    for (int i = 0; i < colors_.size(); i++) {
+        target_roombas_[i] = false;
+    }
+    XmlRpc::XmlRpcValue param_list;
+    std::string param_name = "TARGET_ROOMBAS";
+    if (!private_nh_.getParam(param_name.c_str(), param_list)) {
+        for (int i = 0; i < colors_.size(); i++) {
+            target_roombas_[i] = true;
+        }
+        return;
+    }
+    ROS_ASSERT(param_list.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    for (size_t i = 0; i < param_list.size(); i++) {
+        ROS_ASSERT(param_list[i].getType() == XmlRpc::XmlRpcValue::TypeInt);
+        target_roombas_[param_list[i]] = true;
+    }
 }
 
 void PointCloudColorDetector::set_hsv_params() {
@@ -99,7 +120,7 @@ void PointCloudColorDetector::print_all_params() {
 bool PointCloudColorDetector::enable_color(color_detector_srvs::ColorEnable::Request &req,
                                            color_detector_srvs::ColorEnable::Response &res) {
     for (size_t i = 0; i < colors_.size(); i++) {
-        if (colors_[i] == req.color) {
+        if (target_roombas_[i] && colors_[i] == req.color) {
             use_colors_[i] = req.enable;
         }
     }

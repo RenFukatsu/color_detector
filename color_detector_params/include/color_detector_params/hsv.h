@@ -19,7 +19,7 @@ struct ThresholdHSV {
 };
 
 inline void init(std::vector<std::string> &colors, std::vector<ThresholdHSV> &config_hsvs) {
-    colors = {"green", "yellow", "blue", "orange", "purple", "red", "apricot", "navy", "olive", "brown"};
+    colors = {"apricot", "green", "yellow", "blue", "orange", "purple", "red", "brown", "navy", "olive"};
     config_hsvs.resize(colors.size());
 }
 

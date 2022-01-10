@@ -44,8 +44,10 @@ class PointCloudColorDetector {
     color_detector_msgs::TargetPosition calc_target_position(int mag,
                                                              const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pc);
     void save_csv(const color_detector_msgs::TargetPosition::ConstPtr &target_position);
+    void read_target_roombas();
     void process();
     std::vector<std::string> colors_;
+    std::map<int, bool> target_roombas_;
     std::vector<ThresholdHSV> param_hsvs_;
     std::vector<bool> use_colors_;
     bool only_publish_mask_points_;
