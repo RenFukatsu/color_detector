@@ -76,12 +76,12 @@ inline void set_hsv(const std::vector<std::string> &colors, const color_detector
         config_hsvs[i].upper.s = config.UPPER_ORANGE_S;
         config_hsvs[i].upper.v = config.UPPER_ORANGE_V;
     } else if (colors[i] == "purple") {
-        config_hsvs[i].lower.h = config.LOWER_ORANGE_H;
-        config_hsvs[i].lower.s = config.LOWER_ORANGE_S;
-        config_hsvs[i].lower.v = config.LOWER_ORANGE_V;
-        config_hsvs[i].upper.h = config.UPPER_ORANGE_H;
-        config_hsvs[i].upper.s = config.UPPER_ORANGE_S;
-        config_hsvs[i].upper.v = config.UPPER_ORANGE_V;
+        config_hsvs[i].lower.h = config.LOWER_PURPLE_H;
+        config_hsvs[i].lower.s = config.LOWER_PURPLE_S;
+        config_hsvs[i].lower.v = config.LOWER_PURPLE_V;
+        config_hsvs[i].upper.h = config.UPPER_PURPLE_H;
+        config_hsvs[i].upper.s = config.UPPER_PURPLE_S;
+        config_hsvs[i].upper.v = config.UPPER_PURPLE_V;
     } else if (colors[i] == "apricot") {
         config_hsvs[i].lower.h = config.LOWER_APRICOT_H;
         config_hsvs[i].lower.s = config.LOWER_APRICOT_S;
