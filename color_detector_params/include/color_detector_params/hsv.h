@@ -23,6 +23,11 @@ inline void init(std::vector<std::string> &colors, std::vector<ThresholdHSV> &co
     config_hsvs.resize(colors.size());
 }
 
+inline void init(std::vector<std::string> &colors) {
+    std::vector<ThresholdHSV> _;
+    init(colors, _);
+}
+
 inline void update_use_colors(const std::vector<std::string> &colors, const color_detector_params::HsvConfig &config,
                               std::vector<bool> &use_colors) {
     for (size_t i = 0; i < colors.size(); i++) {
